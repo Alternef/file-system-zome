@@ -1,0 +1,19 @@
+---
+manifest_version: "1"
+name: soushi-coud
+description: ~
+roles:
+  - name: file_storage
+    provisioning:
+      strategy: create
+      deferred: false
+    dna:
+      bundled: "../dnas/file_storage/workdir/file_storage.dna"
+      modifiers:
+        network_seed: ~
+        properties: ~
+        origin_time: ~
+        quantum_time: ~
+      installed_hash: ~
+      _version: ~
+      clone_limit: 0
