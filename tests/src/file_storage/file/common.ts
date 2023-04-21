@@ -29,6 +29,14 @@ export async function createFileMetadata(cell: CallableCell, file: FileMetadata)
 	});
 }
 
+export async function getFileMetadata(cell: CallableCell, hash: Uint8Array): Promise<Record> {
+	return cell.callZome({
+		zome_name: "file_storage",
+		fn_name: "get_file_metadata",
+		payload: hash,
+	});
+}
+
 export function sampleFile(agentPubKey: Uint8Array): FileMetadata {
 	return {
 			name: "test.txt",
