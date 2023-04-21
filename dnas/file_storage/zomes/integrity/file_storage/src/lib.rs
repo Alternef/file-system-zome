@@ -22,10 +22,10 @@ pub struct FileChunk(SerializedBytes);
 pub struct FileMetadata {
   pub name: String,
   pub author: AgentPubKey,
+  pub path: String,
   pub created: Timestamp,
   pub last_modified: Timestamp,
   pub size: usize,
   pub file_type: String,
-  pub chunks_hashes: Vec<EntryHash>,
-  pub path: String,
+  pub chunks_hashes: Option<Vec<EntryHash>>,
 }

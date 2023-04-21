@@ -69,7 +69,11 @@ pub fn get_file_chunks(file_metadata_hash: EntryHash) -> ExternResult<Vec<FileCh
 
   let mut file_chunks = Vec::new();
 
-  for file_chunk_hash in file_metadata.chunks_hashes {
+  if let None = file_metadata.chunks_hashes {
+    return Ok(file_chunks);
+  }
+
+  for file_chunk_hash in file_metadata.chunks_hashes.unwrap() {
     let file_chunk = get_file_chunk(file_chunk_hash)?;
     file_chunks.push(file_chunk);
   }
