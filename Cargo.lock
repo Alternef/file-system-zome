@@ -220,12 +220,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4e3c5919066adf22df73762e50cffcde3a758f2a848b113b586d1f86728b673b"
 dependencies = [
  "iana-time-zone",
- "js-sys",
  "num-integer",
  "num-traits",
  "serde",
  "time",
- "wasm-bindgen",
  "winapi",
 ]
 
@@ -589,7 +587,6 @@ dependencies = [
 name = "file_storage"
 version = "0.0.1"
 dependencies = [
- "chrono",
  "file_storage_integrity",
  "hdk",
  "holochain_integrity_types",
@@ -600,7 +597,6 @@ dependencies = [
 name = "file_storage_integrity"
 version = "0.0.1"
 dependencies = [
- "chrono",
  "hdi",
  "holochain_integrity_types",
  "serde",

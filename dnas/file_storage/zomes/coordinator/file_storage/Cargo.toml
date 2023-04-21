@@ -12,6 +12,5 @@ hdk = { workspace = true }
 holochain_integrity_types = { workspace = true }
 
 serde = { workspace = true }
-chrono = { workspace = true }
 
 file_storage_integrity = { workspace = true }

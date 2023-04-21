@@ -1,4 +1,3 @@
-use chrono::{serde::ts_milliseconds, DateTime, Utc};
 use hdi::prelude::*;
 
 
@@ -23,12 +22,9 @@ pub struct FileChunk(SerializedBytes);
 pub struct FileMetadata {
   pub name: String,
   pub author: AgentPubKey,
-  #[serde(with = "ts_milliseconds")]
-  pub created: DateTime<Utc>,
-  #[serde(with = "ts_milliseconds")]
-  pub last_modified: DateTime<Utc>,
+  pub created: Timestamp,
+  pub last_modified: Timestamp,
   pub size: usize,
-  // Size in bytes
   pub file_type: String,
   pub chunks_hashes: Vec<EntryHash>,
   pub path: String,

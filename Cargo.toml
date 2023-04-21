@@ -12,7 +12,6 @@ hdi = "=0.2.2"
 hdk = "=0.1.2"
 holochain_integrity_types = "=0.1.2"
 serde = "1"
-chrono = "0.4.24"
 
 [workspace.dependencies.file_storage]
 path = "dnas/file_storage/zomes/coordinator/file_storage"
