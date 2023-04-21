@@ -1,0 +1,19 @@
+---
+manifest_version: "1"
+name: file_storage
+integrity:
+  network_seed: ~
+  properties: ~
+  origin_time: 1682077609198213
+  zomes:
+    - name: file_storage_integrity
+      hash: ~
+      bundled: "../../../target/wasm32-unknown-unknown/release/file_storage_integrity.wasm"
+      dependencies: ~
+coordinator:
+  zomes:
+    - name: file_storage
+      hash: ~
+      bundled: "../../../target/wasm32-unknown-unknown/release/file_storage.wasm"
+      dependencies:
+        - name: file_storage_integrity

@@ -1,9 +1,9 @@
 ---
 manifest_version: "1"
-name: soushi-coud
+name: soushi-cloud
 description: ~
 roles:
-  - name: file_storage
+  - name: todos
     provisioning:
       strategy: create
       deferred: false

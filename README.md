@@ -1,4 +1,4 @@
-# Soushi Coud
+# Test Happ
 
 ## Environment Setup
 
@@ -46,8 +46,8 @@ To package the web happ:
 npm run package
 ```
 
-You'll have the `soushi-coud.webhapp` in `workdir`. This is what you should distribute so that the Holochain Launcher can install it.
-You will also have its subcomponent `soushi-coud.happ` in the same folder`.
+You'll have the `test-happ.webhapp` in `workdir`. This is what you should distribute so that the Holochain Launcher can install it.
+You will also have its subcomponent `test-happ.happ` in the same folder`.
 
 ## Documentation
 
