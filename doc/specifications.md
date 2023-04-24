@@ -5,9 +5,6 @@
 Soushi Cloud hApp is an Holochain application that allows users to create and manage their own cloud storage. It is a
 distributed application that can be run on any device that can run Holochain.
 
-### Limitation
-- No file chunking so the maximum file size is limited by the maximum size of a Holochain entry (1MB).
-
 ## Architecture
 
 ### Guest
@@ -49,10 +46,7 @@ that has the fallowing functions :
 ##### File
 
 ```rust
-pub struct File {
-  pub metadata: EntryHash,
-  pub content: Vec<u8>,
-}
+pub struct FileChunk(SerializedBytes);
 ```
 
 ##### FileMetadata
@@ -61,11 +55,19 @@ pub struct File {
 pub struct FileMetadata {
   pub name: String,
   pub author: AgentPubKey,
-  pub size: u64,
-  pub last_modified: DateTime<Utc>,
-  pub last_modified_by: AgentPubKey,
-  pub path: Vec<String>,
+  pub path: String,
+  pub created: Timestamp,
+  pub last_modified: Timestamp,
+  pub size: usize,
+  pub file_type: String,
+  pub chunks_hashes: Option<Vec<EntryHash>>,
 }
 ```
 
 #### Membrane Proof
+
+## Diagrams
+
+### File Storage
+
+![File Storage](./img/file-storage.png)
