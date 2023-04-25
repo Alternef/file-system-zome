@@ -1,14 +1,5 @@
 import {CallableCell} from '@holochain/tryorama';
-import {
-	NewEntryAction,
-	ActionHash,
-	Record,
-	AppBundleSource,
-	fakeActionHash,
-	fakeAgentPubKey,
-	fakeEntryHash,
-	fakeDnaHash
-} from '@holochain/client';
+import {Record} from '@holochain/client';
 
 export type FileMetadata = {
 	name: string,
@@ -18,13 +9,29 @@ export type FileMetadata = {
 	last_modified: number,
 	size: number,
 	file_type: string,
-	chunk_hashes: string[],
+	chunks_hashes: Uint8Array[],
 }
 
-export async function createFileMetadata(cell: CallableCell, file: FileMetadata): Promise<Record> {
+export type FileInput = {
+	name: string,
+	path: string,
+	file_type: string,
+	content: Uint8Array,
+}
+
+export function sampleFileInput(): FileInput {
+	return {
+		name: "test.txt",
+		path: "/test.txt",
+		file_type: "text/plain",
+		content: new TextEncoder().encode("hello world"),
+	}
+}
+
+export async function createFile(cell: CallableCell, file: FileInput): Promise<Record[]> {
 	return cell.callZome({
 		zome_name: "file_storage",
-		fn_name: "create_file_metadata",
+		fn_name: "create_file",
 		payload: file,
 	});
 }
@@ -37,15 +44,12 @@ export async function getFileMetadata(cell: CallableCell, hash: Uint8Array): Pro
 	});
 }
 
-export function sampleFile(agentPubKey: Uint8Array): FileMetadata {
-	return {
-			name: "test.txt",
-			author: agentPubKey,
-			created: 1674053334548000,
-			last_modified: 1674053334548000,
-			size: 100,
-			file_type: "text/plain",
-			path: "/test.txt",
-			chunk_hashes: [],
-		};
+export async function getFileChunk(cell: CallableCell, hash: Uint8Array): Promise<Record> {
+	return cell.callZome({
+		zome_name: "file_storage",
+		fn_name: "get_file_chunk",
+		payload: hash,
+	});
 }
+
+

@@ -15,7 +15,8 @@ pub enum EntryTypes {
 }
 
 #[hdk_entry_helper]
-pub struct FileChunk(SerializedBytes);
+#[derive(Clone)]
+pub struct FileChunk(pub SerializedBytes);
 
 #[hdk_entry_helper]
 #[derive(Clone)]
