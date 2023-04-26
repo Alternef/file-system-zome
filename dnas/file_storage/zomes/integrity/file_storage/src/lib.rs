@@ -4,6 +4,7 @@ use hdi::prelude::*;
 #[hdk_link_types]
 pub enum LinkTypes {
   PathToFileMetaData,
+  PathToFolderMetaData,
   FileMetaDataToChunks,
 }
 
@@ -28,5 +29,5 @@ pub struct FileMetadata {
   pub last_modified: Timestamp,
   pub size: usize,
   pub file_type: String,
-  pub chunks_hashes: Option<Vec<EntryHash>>,
+  pub chunks_hashes: Vec<EntryHash>,
 }
