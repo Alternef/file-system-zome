@@ -63,11 +63,45 @@ pub fn create_file(file_input: FileInput) -> ExternResult<FileOutput> {
 }
 
 #[hdk_extern]
-pub fn get_file_metadata(file_metadata_hash: ActionHash) -> ExternResult<Record> {
-  let record = get(file_metadata_hash, GetOptions::default())?
-    .ok_or(wasm_error!(WasmErrorInner::Guest("File not found".into())))?;
+pub fn get_file_chunks(file_metadata_hash: ActionHash) -> ExternResult<Vec<Record>> {
+  let record = get_file_metadata(file_metadata_hash)?
+    .ok_or(wasm_error!(
+      WasmErrorInner::Guest(String::from("Could not find the file metadata"))
+    ))?;
+  let file_metadata: FileMetadata = record.try_into()?;
 
-  Ok(record)
+  let mut file_chunks = Vec::new();
+
+  if file_metadata.chunks_hashes.is_empty() {
+    return Ok(file_chunks);
+  }
+
+  for file_chunk_hash in file_metadata.chunks_hashes {
+    let file_chunk = get_file_chunk(file_chunk_hash)?;
+    file_chunks.push(file_chunk);
+  }
+
+  Ok(file_chunks)
+}
+
+#[hdk_extern]
+pub fn get_file_metadata(original_file_metadata_hash: ActionHash) -> ExternResult<Option<Record>> {
+  let links = get_links(
+    original_file_metadata_hash.clone(),
+    LinkTypes::FileMetaDataUpdate,
+    None,
+  )?;
+
+  let latest_link = links
+    .into_iter()
+    .max_by(|link_a, link_b| link_a.timestamp.cmp(&link_b.timestamp));
+
+  let latest_file_metadata_hash = match latest_link {
+    Some(link) => ActionHash::from(link.target.clone()),
+    None => original_file_metadata_hash.clone(),
+  };
+
+  get(latest_file_metadata_hash, GetOptions::default())
 }
 
 #[hdk_extern]
@@ -90,10 +124,27 @@ fn update_file(update_file_metadata_input: UpdateFileMetadataInput) -> ExternRes
   let original_file_metadata_hash = update_file_metadata_input.original_file_metadata_hash;
   let new_content = update_file_metadata_input.new_content.bytes();
 
-  let chunks_hashes = chunk_file(new_content.to_vec())?;
+  let all_update_links = get_links(
+    original_file_metadata_hash.clone(),
+    LinkTypes::FileMetaDataUpdate,
+    None,
+  )?;
+  let latest_link = all_update_links
+    .into_iter()
+    .max_by(|link_a, link_b| link_a.timestamp.cmp(&link_b.timestamp));
 
+  let previous_file_metadata_hash = match latest_link {
+    Some(link) => Some(ActionHash::from(link.target.clone())),
+    None => None,
+  };
+
+  let chunks_hashes = chunk_file(new_content.to_vec())?;
   let now = sys_time()?;
-  let file_metadata_record = get_file_metadata(original_file_metadata_hash.clone())?;
+
+  let file_metadata_record = get_file_metadata(original_file_metadata_hash.clone())?
+    .ok_or(wasm_error!(
+      WasmErrorInner::Guest(String::from("Could not find the file metadata"))
+    ))?;
   let mut file_metadata = FileMetadata::try_from(file_metadata_record.clone())?;
   let old_chunks_hashes = file_metadata.chunks_hashes.clone();
 
@@ -106,15 +157,18 @@ fn update_file(update_file_metadata_input: UpdateFileMetadataInput) -> ExternRes
     delete_entry(chunk_record.signed_action.hashed.hash)?;
   }
 
-  let metadata_action_hash = update_entry(file_metadata_record.signed_action.hashed.hash, &file_metadata.clone())?;
+  let updated_metadata_record = update_file_metadata(
+    original_file_metadata_hash.clone(),
+    previous_file_metadata_hash.clone(),
+    file_metadata,
+  )?;
 
-  let metadata_record = get_file_metadata(metadata_action_hash.clone())?;
   let chunks_records: Vec<Record> = chunks_hashes.iter()
     .map(|chunk_hash|
       get_file_chunk(chunk_hash.clone()).unwrap())
     .collect();
   let records = FileOutput {
-    file_metadata: metadata_record,
+    file_metadata: updated_metadata_record,
     file_chunks: chunks_records,
   };
 
@@ -123,10 +177,30 @@ fn update_file(update_file_metadata_input: UpdateFileMetadataInput) -> ExternRes
 
 #[hdk_extern]
 pub fn delete_file_metadata_and_chunks(original_file_metadata_hash: ActionHash) -> ExternResult<ActionHash> {
+  let update_links = get_links(
+    original_file_metadata_hash.clone(),
+    LinkTypes::FileMetaDataUpdate,
+    None,
+  )?;
+
+  for link in update_links {
+    let file_metadata_hash = ActionHash::from(link.target.clone());
+
+    let file_chunks = get_file_chunks(file_metadata_hash.clone())?;
+    for file_chunk in file_chunks {
+      delete_entry(file_chunk.signed_action.hashed.hash)?;
+    }
+
+    delete_entry(file_metadata_hash)?;
+  }
+
+
   let file_chunks = get_file_chunks(original_file_metadata_hash.clone())?;
   for file_chunk in file_chunks {
     delete_entry(file_chunk.signed_action.hashed.hash)?;
   }
 
-  delete_entry(original_file_metadata_hash)
+  delete_entry(original_file_metadata_hash.clone())?;
+
+  Ok(original_file_metadata_hash)
 }

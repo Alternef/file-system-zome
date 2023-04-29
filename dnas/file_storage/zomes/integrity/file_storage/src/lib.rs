@@ -5,6 +5,7 @@ use hdi::prelude::*;
 pub enum LinkTypes {
   PathFileSystem,
   PathToFileMetaData,
+  FileMetaDataUpdate,
 }
 
 #[hdk_entry_defs]

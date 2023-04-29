@@ -11,12 +11,14 @@ pub fn get_files_metadata_recursively(path: Path) -> ExternResult<Vec<Record>> {
   let files_links = get_links(
     typed_path.path_entry_hash()?,
     LinkTypes::PathToFileMetaData,
-    Some(LinkTag::new("file_metadata")),
+    None,
   )?;
 
   for link in files_links {
     let file_metadata = get_file_metadata(ActionHash::from(link.clone().target))?;
-    files.push(file_metadata);
+    if let Some(file_metadata) = file_metadata {
+      files.push(file_metadata);
+    }
   }
 
   let sub_folders_paths = typed_path.children_paths().unwrap_or_default();
@@ -47,7 +49,9 @@ pub fn create_file_chunk(file_chunk: FileChunk) -> ExternResult<Record> {
 
 pub fn create_file_metadata(file_metadata: FileMetadata) -> ExternResult<Record> {
   let action_hash = create_entry(&EntryTypes::FileMetadata(file_metadata.clone()))?;
-  let record = get_file_metadata(action_hash.clone())?;
+  let record = get_file_metadata(action_hash.clone())?.ok_or(wasm_error!(
+    WasmErrorInner::Guest(String::from("Could not find the newly created file metadata"))
+  ))?;
 
   let file_path = fs_path_to_dht_path(file_metadata.path.as_str());
   let path = Path::from(file_path);
@@ -58,7 +62,7 @@ pub fn create_file_metadata(file_metadata: FileMetadata) -> ExternResult<Record>
     typed_path.path_entry_hash()?,
     action_hash.clone(),
     LinkTypes::PathToFileMetaData,
-    LinkTag::new("file_metadata"),
+    (),
   )?;
 
   Ok(record)
@@ -66,28 +70,11 @@ pub fn create_file_metadata(file_metadata: FileMetadata) -> ExternResult<Record>
 
 pub fn get_file_chunk(file_chunk_hash: EntryHash) -> ExternResult<Record> {
   let record = get(file_chunk_hash, GetOptions::default())?
-    .ok_or(wasm_error!(WasmErrorInner::Guest("File not found".into())))?;
+    .ok_or(wasm_error!(WasmErrorInner::Guest("Chunk not found".into())))?;
 
   Ok(record)
 }
 
-pub fn get_file_chunks(file_metadata_hash: ActionHash) -> ExternResult<Vec<Record>> {
-  let record = get_file_metadata(file_metadata_hash)?;
-  let file_metadata: FileMetadata = record.try_into()?;
-
-  let mut file_chunks = Vec::new();
-
-  if file_metadata.chunks_hashes.is_empty() {
-    return Ok(file_chunks);
-  }
-
-  for file_chunk_hash in file_metadata.chunks_hashes {
-    let file_chunk = get_file_chunk(file_chunk_hash)?;
-    file_chunks.push(file_chunk);
-  }
-
-  Ok(file_chunks)
-}
 
 pub fn get_file_metadata_by_path_and_name(path: String, name: String) -> ExternResult<Record> {
   let file_path = fs_path_to_dht_path(path.as_str());
@@ -96,11 +83,14 @@ pub fn get_file_metadata_by_path_and_name(path: String, name: String) -> ExternR
   let files_links = get_links(
     typed_path.path_entry_hash()?,
     LinkTypes::PathToFileMetaData,
-    Some(LinkTag::new("file_metadata")),
+    None,
   )?;
 
   for link in files_links {
-    let file_metadata_record = get_file_metadata(ActionHash::from(link.clone().target))?;
+    let file_metadata_record = get_file_metadata(ActionHash::from(link.clone().target))?
+      .ok_or(wasm_error!(
+      WasmErrorInner::Guest(String::from("Could not find the newly created file metadata"))
+      ))?;
     let file_metadata: FileMetadata = file_metadata_record.clone().try_into()?;
     if file_metadata.name == name {
       return Ok(file_metadata_record);
@@ -108,6 +98,29 @@ pub fn get_file_metadata_by_path_and_name(path: String, name: String) -> ExternR
   }
 
   Err(wasm_error!(WasmErrorInner::Guest("File not found".into())))
+}
+
+pub fn update_file_metadata(original_file_metadata_hash: ActionHash, previous_file_metadata_hash: Option<ActionHash>, file_metadata: FileMetadata) -> ExternResult<Record> {
+  let file_metadata_hash = if previous_file_metadata_hash.is_some() {
+    previous_file_metadata_hash.unwrap()
+  } else {
+    original_file_metadata_hash.clone()
+  };
+  let updated_metadata_hash = update_entry(file_metadata_hash, &file_metadata.clone())?;
+
+  create_link(
+    original_file_metadata_hash,
+    updated_metadata_hash.clone(),
+    LinkTypes::FileMetaDataUpdate,
+    (),
+  )?;
+
+  let record = get_file_metadata(updated_metadata_hash.clone())?
+    .ok_or(wasm_error!(
+      WasmErrorInner::Guest(String::from("Could not find the file metadata"))
+    ))?;
+
+  Ok(record)
 }
 
 pub fn chunk_file(file_content: Vec<u8>) -> ExternResult<Vec<EntryHash>> {

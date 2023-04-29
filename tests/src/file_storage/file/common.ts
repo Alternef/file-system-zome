@@ -1,5 +1,5 @@
 import {CallableCell} from '@holochain/tryorama';
-import {AgentPubKey, Record} from '@holochain/client';
+import {ActionHash, AgentPubKey, Record} from '@holochain/client';
 
 export type FileMetadata = {
 	name: string,
@@ -32,11 +32,19 @@ export async function createFile(cell: CallableCell, file: CreateFileInput): Pro
 	});
 }
 
-export async function getFileMetadata(cell: CallableCell, file_hash: Uint8Array): Promise<Record> {
+export async function getFileChunks(cell: CallableCell, file_metadata_hash: ActionHash): Promise<Record[]> {
+	return cell.callZome({
+		zome_name: "file_storage",
+		fn_name: "get_file_chunks",
+		payload: file_metadata_hash,
+	});
+}
+
+export async function getFileMetadata(cell: CallableCell, file_metadata_hash: ActionHash): Promise<Record | null> {
 	return cell.callZome({
 		zome_name: "file_storage",
 		fn_name: "get_file_metadata",
-		payload: file_hash,
+		payload: file_metadata_hash,
 	});
 }
 
@@ -48,18 +56,18 @@ export async function getFilesMetadataByPathRecursively(cell: CallableCell, path
 	});
 }
 
-export async function updateFile(cell: CallableCell, file_hash: Uint8Array, new_content: Uint8Array): Promise<FileOutput> {
+export async function updateFile(cell: CallableCell, original_file_metadata_hash: ActionHash, new_content: Uint8Array): Promise<FileOutput> {
 	return cell.callZome({
 		zome_name: "file_storage",
 		fn_name: "update_file",
 		payload: {
-			original_file_metadata_hash: file_hash,
+			original_file_metadata_hash,
 			new_content,
 		},
 	});
 }
 
-export async function deleteFile(cell: CallableCell, original_file_metadata_hash: Uint8Array): Promise<Record> {
+export async function deleteFile(cell: CallableCell, original_file_metadata_hash: ActionHash): Promise<Record> {
 	return cell.callZome({
 		zome_name: "file_storage",
 		fn_name: "delete_file_metadata_and_chunks",

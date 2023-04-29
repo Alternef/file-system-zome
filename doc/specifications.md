@@ -71,3 +71,38 @@ pub struct FileMetadata {
 ### File Storage
 
 ![File Storage](./img/file-storage.png)
+
+```mermaid
+sequenceDiagram
+    participant Alice
+    participant Bob
+    participant FileMetadata
+    participant FileChunk
+    participant UpdateLink
+
+    Alice->>Alice: createFile(sampleFileInput())
+    Alice->>FileMetadata: create original metadata
+    Alice->>FileChunk: create original chunk
+    Alice->>UpdateLink: link original metadata to chunk
+    Alice->>Alice: store original_action_hash
+    Note over Alice: Pause 1200ms
+
+    Alice->>Alice: createFile(sampleFileInput("/", "test.txt", "new content"))
+    Note over Alice: Expect rejection (duplicate file)
+
+    Note over Alice: Pause 1200ms
+
+    Alice->>Alice: updateFile(original_action_hash, "new content")
+    Alice->>FileMetadata: create updated metadata
+    Alice->>FileChunk: create updated chunk
+    Alice->>UpdateLink: link updated metadata to updated chunk
+    Alice->>UpdateLink: link original metadata to updated metadata
+
+    Note over Alice: Pause 1200ms
+
+    Bob->>Bob: getFileChunks(updatedRecords.file_metadata.signed_action.hashed.hash)
+    Bob->>FileMetadata: get updated metadata
+    Bob->>UpdateLink: follow link to updated chunk
+    Bob->>FileChunk: get updated chunk
+    Note over Bob: Decode and verify updated content
+```
