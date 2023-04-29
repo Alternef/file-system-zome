@@ -84,11 +84,11 @@ fn get_files_metadata_by_path_recursively(path_string: String) -> ExternResult<V
 }
 
 #[hdk_extern]
-pub fn delete_file_metadata_and_chunks(original_profile_hash: ActionHash) -> ExternResult<ActionHash> {
-  let file_chunks = get_file_chunks(original_profile_hash.clone())?;
+pub fn delete_file_metadata_and_chunks(original_file_metadata_hash: ActionHash) -> ExternResult<ActionHash> {
+  let file_chunks = get_file_chunks(original_file_metadata_hash.clone())?;
   for file_chunk in file_chunks {
     delete_entry(file_chunk.signed_action.hashed.hash)?;
   }
 
-  delete_entry(original_profile_hash)
+  delete_entry(original_file_metadata_hash)
 }

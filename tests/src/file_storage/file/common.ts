@@ -21,7 +21,39 @@ export type FileInput = {
 
 export type CreateFileOutput = {
 	file_metadata: Record,
-	chunks: Record[],
+	file_chunks: Record[],
+}
+
+export async function createFile(cell: CallableCell, file: FileInput): Promise<CreateFileOutput> {
+	return cell.callZome({
+		zome_name: "file_storage",
+		fn_name: "create_file",
+		payload: file,
+	});
+}
+
+export async function getFileMetadata(cell: CallableCell, file_hash: Uint8Array): Promise<Record> {
+	return cell.callZome({
+		zome_name: "file_storage",
+		fn_name: "get_file_metadata",
+		payload: file_hash,
+	});
+}
+
+export async function getFilesMetadataByPathRecursively(cell: CallableCell, path: string): Promise<Record[]> {
+	return cell.callZome({
+		zome_name: "file_storage",
+		fn_name: "get_files_metadata_by_path_recursively",
+		payload: path,
+	});
+}
+
+export async function deleteFile(cell: CallableCell, original_file_metadata_hash: Uint8Array): Promise<Record> {
+	return cell.callZome({
+		zome_name: "file_storage",
+		fn_name: "delete_file_metadata_and_chunks",
+		payload: original_file_metadata_hash,
+	});
 }
 
 export function sampleFileInput(path: string = "/", name: string = "test.txt"): FileInput {
@@ -33,18 +65,12 @@ export function sampleFileInput(path: string = "/", name: string = "test.txt"): 
 	}
 }
 
-export async function createFile(cell: CallableCell, file: FileInput): Promise<CreateFileOutput> {
-	return cell.callZome({
-		zome_name: "file_storage",
-		fn_name: "create_file",
-		payload: file,
-	});
-}
 
-export async function getFilesMetadataByPathRecursively(cell: CallableCell, path: string): Promise<Record[]> {
-	return cell.callZome({
-		zome_name: "file_storage",
-		fn_name: "get_files_metadata_by_path_recursively",
-		payload: path,
-	});
+export function fiveMbFileInput(path: string = "/", name: string = "large_file.txt"): FileInput {
+	return {
+		name,
+		path,
+		file_type: "text/plain",
+		content: new Uint8Array(5 * 1024 * 1024),
+	}
 }

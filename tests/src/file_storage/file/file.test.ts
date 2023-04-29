@@ -1,4 +1,4 @@
-import {assert, test} from "vitest";
+import {assert, expect, test} from "vitest";
 
 import {runScenario, pause, CallableCell} from '@holochain/tryorama';
 import {
@@ -14,7 +14,7 @@ import {
 import {decode} from '@msgpack/msgpack';
 
 import {
-	createFile, CreateFileOutput, FileMetadata,
+	createFile, deleteFile, FileMetadata, fiveMbFileInput, getFileMetadata,
 	getFilesMetadataByPathRecursively, sampleFileInput,
 } from "./common";
 
@@ -25,35 +25,7 @@ function decodeOutputs(records: Record[]): unknown[] {
 const hAppPath = process.cwd() + '/../workdir/soushi-cloud.happ';
 const appSource = {appBundleSource: {path: hAppPath}};
 
-// test('create File and read FileMetadata', async () => {
-// 	await runScenario(async scenario => {
-// 		const [alice, bob] = await scenario.addPlayersWithApps([appSource, appSource])
-// 		await scenario.shareAllAgents();
-//
-// 		let file = sampleFileInput();
-// 		const records: CreateFileOutput = await createFile(alice.cells[0], file);
-// 		assert.ok(records);
-//
-// 		await pause(1200);
-//
-// 		const readOutput: Record = await getFileMetadata(bob.cells[0], records.file_metadata.signed_action.hashed.hash);
-// 		const decodedOutput = decodeOutputs([readOutput])[0] as FileMetadata;
-// 		assert.equal(decodedOutput.name, file.name);
-//
-// 		await pause(1200);
-//
-// 		const readOutput2: Record = await getFileChunk(bob.cells[0], decodedOutput.chunks_hashes[0]);
-// 		assert.ok(readOutput2);
-//
-// 		const decoder = new TextDecoder();
-// 		const decodedOutput2 = decodeOutputs([readOutput2])[0] as Uint8Array;
-// 		const decodedString = decoder.decode(decodedOutput2);
-// 		const decodedFileString = decoder.decode(file.content);
-// 		assert.equal(decodedString, decodedFileString);
-// 	});
-// });
-
-test('create files and get files metadata', async () => {
+test('create files and get files metadata by path', async () => {
 	await runScenario(async scenario => {
 		const [alice, bob] = await scenario.addPlayersWithApps([appSource, appSource])
 		await scenario.shareAllAgents();
@@ -87,6 +59,24 @@ test('create files and get files metadata', async () => {
 		console.log(decodedOutput);
 		assert.equal(decodedOutput[0].name, "test.txt");
 		assert.equal(decodedOutput[0].path, "subfolder/subfolder3");
+	});
+});
 
+test('create large file and delete it', async () => {
+	await runScenario(async scenario => {
+		const [alice, bob] = await scenario.addPlayersWithApps([appSource, appSource])
+		await scenario.shareAllAgents();
+
+		const records = await createFile(alice.cells[0], fiveMbFileInput("/", "large_file.txt"));
+		assert.equal(records.file_chunks.length, 5);
+
+		await pause(1200);
+
+		await deleteFile(alice.cells[0], records.file_metadata.signed_action.hashed.hash);
+
+		await pause(1200);
+
+		const readOutput = getFileMetadata(bob.cells[0], records.file_metadata.signed_action.hashed.hash);
+		expect(readOutput).rejects.toThrow();
 	});
 });
