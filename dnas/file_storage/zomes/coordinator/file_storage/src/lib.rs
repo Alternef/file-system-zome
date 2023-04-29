@@ -14,29 +14,25 @@ pub struct FileInput {
 }
 
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone, PartialEq)]
-pub struct CreateFileOutput {
+pub struct FileOutput {
   pub file_metadata: Record,
   pub file_chunks: Vec<Record>,
 }
 
 #[hdk_extern]
-pub fn create_file(file_input: FileInput) -> ExternResult<CreateFileOutput> {
-  let chunk_size = 1024 * 1024; // 1 MB
-  let file_content: Vec<u8> = file_input.content.bytes().clone();
-  let num_chunks = (file_content.len() as f64 / chunk_size as f64).ceil() as usize;
-  let mut chunks_hashes = Vec::new();
+pub fn create_file(file_input: FileInput) -> ExternResult<FileOutput> {
+  let is_already_created = get_file_metadata_by_path_and_name(
+    file_input.path.clone(),
+    file_input.name.clone(),
+  );
 
-  for i in 0..num_chunks {
-    let start = i * chunk_size;
-    let end = std::cmp::min((i + 1) * chunk_size, file_content.len());
-    let chunk_data = file_content[start..end].to_vec();
-
-    let file_chunk = FileChunk(SerializedBytes::from(UnsafeBytes::from(chunk_data)));
-
-    create_file_chunk(file_chunk.clone())?;
-    let chunk_hash = hash_entry(&file_chunk)?;
-    chunks_hashes.push(chunk_hash);
+  if is_already_created.is_ok() {
+    return Err(wasm_error!(
+      WasmErrorInner::Guest(String::from("File already exists"))
+    ));
   }
+
+  let chunks_hashes = chunk_file(file_input.content.bytes().clone())?;
 
   let author = agent_info()?.agent_initial_pubkey;
   let now = sys_time()?;
@@ -48,7 +44,7 @@ pub fn create_file(file_input: FileInput) -> ExternResult<CreateFileOutput> {
     path: fs_path,
     created: now,
     last_modified: now,
-    size: file_content.len(),
+    size: file_input.content.bytes().len(),
     file_type: file_input.file_type.clone(),
     chunks_hashes: chunks_hashes.clone(),
   };
@@ -58,7 +54,7 @@ pub fn create_file(file_input: FileInput) -> ExternResult<CreateFileOutput> {
     .map(|chunk_hash|
       get_file_chunk(chunk_hash.clone()).unwrap())
     .collect();
-  let records = CreateFileOutput {
+  let records = FileOutput {
     file_metadata: metadata_record,
     file_chunks: chunks_records,
   };
@@ -81,6 +77,48 @@ fn get_files_metadata_by_path_recursively(path_string: String) -> ExternResult<V
   let path = Path::from(path_string);
 
   get_files_metadata_recursively(path)
+}
+
+#[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone, PartialEq)]
+struct UpdateFileMetadataInput {
+  original_file_metadata_hash: ActionHash,
+  new_content: SerializedBytes,
+}
+
+#[hdk_extern]
+fn update_file(update_file_metadata_input: UpdateFileMetadataInput) -> ExternResult<FileOutput> {
+  let original_file_metadata_hash = update_file_metadata_input.original_file_metadata_hash;
+  let new_content = update_file_metadata_input.new_content.bytes();
+
+  let chunks_hashes = chunk_file(new_content.to_vec())?;
+
+  let now = sys_time()?;
+  let file_metadata_record = get_file_metadata(original_file_metadata_hash.clone())?;
+  let mut file_metadata = FileMetadata::try_from(file_metadata_record.clone())?;
+  let old_chunks_hashes = file_metadata.chunks_hashes.clone();
+
+  file_metadata.last_modified = now;
+  file_metadata.size = new_content.len();
+  file_metadata.chunks_hashes = chunks_hashes.clone();
+
+  for chunk_hash in old_chunks_hashes {
+    let chunk_record = get_file_chunk(chunk_hash.clone())?;
+    delete_entry(chunk_record.signed_action.hashed.hash)?;
+  }
+
+  let metadata_action_hash = update_entry(file_metadata_record.signed_action.hashed.hash, &file_metadata.clone())?;
+
+  let metadata_record = get_file_metadata(metadata_action_hash.clone())?;
+  let chunks_records: Vec<Record> = chunks_hashes.iter()
+    .map(|chunk_hash|
+      get_file_chunk(chunk_hash.clone()).unwrap())
+    .collect();
+  let records = FileOutput {
+    file_metadata: metadata_record,
+    file_chunks: chunks_records,
+  };
+
+  Ok(records)
 }
 
 #[hdk_extern]

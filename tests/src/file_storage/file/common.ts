@@ -1,9 +1,9 @@
 import {CallableCell} from '@holochain/tryorama';
-import {Record} from '@holochain/client';
+import {AgentPubKey, Record} from '@holochain/client';
 
 export type FileMetadata = {
 	name: string,
-	author: Uint8Array,
+	author: AgentPubKey,
 	path: string,
 	created: number,
 	last_modified: number,
@@ -12,19 +12,19 @@ export type FileMetadata = {
 	chunks_hashes: Uint8Array[],
 }
 
-export type FileInput = {
+export type CreateFileInput = {
 	name: string,
 	path: string,
 	file_type: string,
 	content: Uint8Array,
 }
 
-export type CreateFileOutput = {
+export type FileOutput = {
 	file_metadata: Record,
 	file_chunks: Record[],
 }
 
-export async function createFile(cell: CallableCell, file: FileInput): Promise<CreateFileOutput> {
+export async function createFile(cell: CallableCell, file: CreateFileInput): Promise<FileOutput> {
 	return cell.callZome({
 		zome_name: "file_storage",
 		fn_name: "create_file",
@@ -48,6 +48,17 @@ export async function getFilesMetadataByPathRecursively(cell: CallableCell, path
 	});
 }
 
+export async function updateFile(cell: CallableCell, file_hash: Uint8Array, new_content: Uint8Array): Promise<FileOutput> {
+	return cell.callZome({
+		zome_name: "file_storage",
+		fn_name: "update_file",
+		payload: {
+			original_file_metadata_hash: file_hash,
+			new_content,
+		},
+	});
+}
+
 export async function deleteFile(cell: CallableCell, original_file_metadata_hash: Uint8Array): Promise<Record> {
 	return cell.callZome({
 		zome_name: "file_storage",
@@ -56,17 +67,20 @@ export async function deleteFile(cell: CallableCell, original_file_metadata_hash
 	});
 }
 
-export function sampleFileInput(path: string = "/", name: string = "test.txt"): FileInput {
+export function sampleFileInput(
+	path: string = "/",
+	name: string = "test.txt",
+	content: string = "hello world !"
+): CreateFileInput {
 	return {
 		name,
 		path,
 		file_type: "text/plain",
-		content: new TextEncoder().encode("hello world !"),
+		content: new TextEncoder().encode(content),
 	}
 }
 
-
-export function fiveMbFileInput(path: string = "/", name: string = "large_file.txt"): FileInput {
+export function fiveMbFileInput(path: string = "/", name: string = "large_file.txt"): CreateFileInput {
 	return {
 		name,
 		path,

@@ -47,10 +47,7 @@ pub fn create_file_chunk(file_chunk: FileChunk) -> ExternResult<Record> {
 
 pub fn create_file_metadata(file_metadata: FileMetadata) -> ExternResult<Record> {
   let action_hash = create_entry(&EntryTypes::FileMetadata(file_metadata.clone()))?;
-  let record = get(action_hash.clone(), GetOptions::default())?
-    .ok_or(wasm_error!(
-                WasmErrorInner::Guest(String::from("Could not find the newly created file metadata"))
-    ))?;
+  let record = get_file_metadata(action_hash.clone())?;
 
   let file_path = fs_path_to_dht_path(file_metadata.path.as_str());
   let path = Path::from(file_path);
@@ -92,6 +89,46 @@ pub fn get_file_chunks(file_metadata_hash: ActionHash) -> ExternResult<Vec<Recor
   Ok(file_chunks)
 }
 
+pub fn get_file_metadata_by_path_and_name(path: String, name: String) -> ExternResult<Record> {
+  let file_path = fs_path_to_dht_path(path.as_str());
+  let path = Path::from(file_path);
+  let typed_path = path.typed(LinkTypes::PathFileSystem)?;
+  let files_links = get_links(
+    typed_path.path_entry_hash()?,
+    LinkTypes::PathToFileMetaData,
+    Some(LinkTag::new("file_metadata")),
+  )?;
+
+  for link in files_links {
+    let file_metadata_record = get_file_metadata(ActionHash::from(link.clone().target))?;
+    let file_metadata: FileMetadata = file_metadata_record.clone().try_into()?;
+    if file_metadata.name == name {
+      return Ok(file_metadata_record);
+    }
+  }
+
+  Err(wasm_error!(WasmErrorInner::Guest("File not found".into())))
+}
+
+pub fn chunk_file(file_content: Vec<u8>) -> ExternResult<Vec<EntryHash>> {
+  let chunk_size = 1024 * 1024; // 1 MB
+  let num_chunks = (file_content.len() as f64 / chunk_size as f64).ceil() as usize;
+  let mut chunks_hashes = Vec::new();
+
+  for i in 0..num_chunks {
+    let start = i * chunk_size;
+    let end = std::cmp::min((i + 1) * chunk_size, file_content.len());
+    let chunk_data = file_content[start..end].to_vec();
+
+    let file_chunk = FileChunk(SerializedBytes::from(UnsafeBytes::from(chunk_data)));
+
+    create_file_chunk(file_chunk.clone())?;
+    let chunk_hash = hash_entry(&file_chunk)?;
+    chunks_hashes.push(chunk_hash);
+  }
+
+  Ok(chunks_hashes)
+}
 
 pub fn fs_path_to_dht_path(path: &str) -> String {
   let mut path = path.to_string();
