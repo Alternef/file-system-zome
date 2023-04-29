@@ -14,8 +14,8 @@ import {
 import {decode} from '@msgpack/msgpack';
 
 import {
-	createFile, CreateFileOutput, FileMetadata, getFilesMetadataByPath,
-	sampleFileInput,
+	createFile, CreateFileOutput, FileMetadata,
+	getFilesMetadataByPathRecursively, sampleFileInput,
 } from "./common";
 
 function decodeOutputs(records: Record[]): unknown[] {
@@ -53,32 +53,40 @@ const appSource = {appBundleSource: {path: hAppPath}};
 // 	});
 // });
 
-test('ensure folder structure', async () => {
+test('create files and get files metadata', async () => {
 	await runScenario(async scenario => {
 		const [alice, bob] = await scenario.addPlayersWithApps([appSource, appSource])
 		await scenario.shareAllAgents();
 
-		let rootFile = sampleFileInput();
-		const records: CreateFileOutput = await createFile(alice.cells[0], rootFile);
-		assert.ok(records);
+		// /index.txt
+		await createFile(alice.cells[0], sampleFileInput());
+		// /index2.txt
+		await createFile(alice.cells[0], sampleFileInput("/", "index2.txt"));
+		// /subfolder/index.txt
+		await createFile(alice.cells[0], sampleFileInput("subfolder"));
+		// /subfolder2/index2.txt
+		await createFile(alice.cells[0], sampleFileInput("subfolder2", "index2.txt"));
+		// /subfolder/subfolder3/index.txt
+		await createFile(alice.cells[0], sampleFileInput("subfolder/subfolder3"));
 
 		await pause(1200);
 
-		let subFolderFile = sampleFileInput("/subfolder");
-		const records2: CreateFileOutput = await createFile(alice.cells[0], subFolderFile);
+		let readOutput: Record[] = await getFilesMetadataByPathRecursively(bob.cells[0], "/");
+		assert.equal(readOutput.length, 5);
 
-		// let subFolderFile2 = sampleFileInput("/subfolder/subfolder2");
-		// const records3: CreateFileOutput = await createFile(alice.cells[0], subFolderFile2);
+		readOutput = await getFilesMetadataByPathRecursively(bob.cells[0], "/subfolder");
+		assert.equal(readOutput.length, 2);
 
+		readOutput = await getFilesMetadataByPathRecursively(bob.cells[0], "/subfolder2");
+		assert.equal(readOutput.length, 1);
 
-		await pause(1200);
+		readOutput = await getFilesMetadataByPathRecursively(bob.cells[0], "/subfolder/subfolder3");
+		assert.equal(readOutput.length, 1);
 
-		const readOutput: Record[] = await getFilesMetadataByPath(bob.cells[0], "/subfolder");
-		console.log("Number of files :", readOutput.length);
-		// assert.equal(readOutput.length, 2);
+		const decodedOutput = decodeOutputs(readOutput) as FileMetadata[];
+		console.log(decodedOutput);
+		assert.equal(decodedOutput[0].name, "test.txt");
+		assert.equal(decodedOutput[0].path, "subfolder/subfolder3");
 
-
-		// const readOutput2: Record[] = await getFilesMetadataByPath(bob.cells[0], "/subfolder");
-		// assert.equal(readOutput2.length, 1);
 	});
 });

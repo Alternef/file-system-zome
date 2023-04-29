@@ -24,9 +24,9 @@ export type CreateFileOutput = {
 	chunks: Record[],
 }
 
-export function sampleFileInput(path: string = "/"): FileInput {
+export function sampleFileInput(path: string = "/", name: string = "test.txt"): FileInput {
 	return {
-		name: "test.txt",
+		name,
 		path,
 		file_type: "text/plain",
 		content: new TextEncoder().encode("hello world !"),
@@ -41,20 +41,10 @@ export async function createFile(cell: CallableCell, file: FileInput): Promise<C
 	});
 }
 
-export async function getFileMetadata(cell: CallableCell, hash: Uint8Array): Promise<Record> {
+export async function getFilesMetadataByPathRecursively(cell: CallableCell, path: string): Promise<Record[]> {
 	return cell.callZome({
 		zome_name: "file_storage",
-		fn_name: "get_file_metadata",
-		payload: hash,
-	});
-}
-
-
-export async function getFilesMetadataByPath(cell: CallableCell, path: string): Promise<Record[]> {
-	return cell.callZome({
-		zome_name: "file_storage",
-		fn_name: "get_files_metadata_by_path",
+		fn_name: "get_files_metadata_by_path_recursively",
 		payload: path,
 	});
 }
-

@@ -40,11 +40,12 @@ pub fn create_file(file_input: FileInput) -> ExternResult<CreateFileOutput> {
 
   let author = agent_info()?.agent_initial_pubkey;
   let now = sys_time()?;
+  let fs_path = standardize_fs_path(&file_input.path);
 
   let file_metadata = FileMetadata {
     name: file_input.name.clone(),
     author,
-    path: file_input.path.clone(),
+    path: fs_path,
     created: now,
     last_modified: now,
     size: file_content.len(),
@@ -74,7 +75,20 @@ pub fn get_file_metadata(file_metadata_hash: ActionHash) -> ExternResult<Record>
 }
 
 #[hdk_extern]
-fn get_files_metadata_by_path(path_string: String) -> ExternResult<Vec<Record>> {
-  let path = Path::from(path_string.replace("/", "."));
+fn get_files_metadata_by_path_recursively(path_string: String) -> ExternResult<Vec<Record>> {
+  let path_string = fs_path_to_dht_path(path_string.as_str());
+  warn!("path_string: {:?}", path_string);
+  let path = Path::from(path_string);
+
   get_files_metadata_recursively(path)
+}
+
+#[hdk_extern]
+pub fn delete_file_metadata_and_chunks(original_profile_hash: ActionHash) -> ExternResult<ActionHash> {
+  let file_chunks = get_file_chunks(original_profile_hash.clone())?;
+  for file_chunk in file_chunks {
+    delete_entry(file_chunk.signed_action.hashed.hash)?;
+  }
+
+  delete_entry(original_profile_hash)
 }
