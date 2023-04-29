@@ -177,22 +177,25 @@ fn update_file(update_file_metadata_input: UpdateFileMetadataInput) -> ExternRes
 
 #[hdk_extern]
 pub fn delete_file_metadata_and_chunks(original_file_metadata_hash: ActionHash) -> ExternResult<ActionHash> {
-  let update_links = get_links(
-    original_file_metadata_hash.clone(),
-    LinkTypes::FileMetaDataUpdate,
-    None,
-  )?;
+  // let update_links = get_links(
+  //   original_file_metadata_hash.clone(),
+  //   LinkTypes::FileMetaDataUpdate,
+  //   None,
+  // )?;
 
-  for link in update_links {
-    let file_metadata_hash = ActionHash::from(link.target.clone());
+  // for link in update_links {
+  //   let file_metadata_hash = ActionHash::from(link.target.clone());
+  //
+  //   warn!("file_metadata_hash: {:?}", file_metadata_hash);
+  //
+  //   let file_chunks = get_file_chunks(file_metadata_hash.clone())?;
+  //   for file_chunk in file_chunks {
+  //     warn!("file_chunk: {:?}", file_chunk)
+      // delete_entry(file_chunk.signed_action.hashed.hash)?;
+    // }
 
-    let file_chunks = get_file_chunks(file_metadata_hash.clone())?;
-    for file_chunk in file_chunks {
-      delete_entry(file_chunk.signed_action.hashed.hash)?;
-    }
-
-    delete_entry(file_metadata_hash)?;
-  }
+    // delete_entry(file_metadata_hash)?;
+  // }
 
 
   let file_chunks = get_file_chunks(original_file_metadata_hash.clone())?;
