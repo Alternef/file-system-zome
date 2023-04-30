@@ -70,7 +70,7 @@ export async function updateFile(cell: CallableCell, original_file_metadata_hash
 export async function deleteFile(cell: CallableCell, original_file_metadata_hash: ActionHash): Promise<Record> {
 	return cell.callZome({
 		zome_name: "file_storage",
-		fn_name: "delete_file_metadata_and_chunks",
+		fn_name: "delete_file",
 		payload: original_file_metadata_hash,
 	});
 }

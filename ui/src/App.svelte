@@ -29,7 +29,7 @@
     </div>
   {:else}
     <div id="content" style="display: flex; flex-direction: column; flex: 1;">
-    <h2>Hello World !</h2>
+    <h2 class="test">Hello World !</h2>
     </div>
   {/if}
 </main>

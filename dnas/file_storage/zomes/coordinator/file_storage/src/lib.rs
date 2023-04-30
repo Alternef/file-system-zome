@@ -64,17 +64,14 @@ pub fn create_file(file_input: FileInput) -> ExternResult<FileOutput> {
 
 #[hdk_extern]
 pub fn get_file_chunks(file_metadata_hash: ActionHash) -> ExternResult<Vec<Record>> {
-  let record = get_file_metadata(file_metadata_hash)?
-    .ok_or(wasm_error!(
-      WasmErrorInner::Guest(String::from("Could not find the file metadata"))
-    ))?;
-  let file_metadata: FileMetadata = record.try_into()?;
+  let record_option = get_file_metadata(file_metadata_hash)?;
+  if record_option.is_none() { return Ok(Vec::new()); }
+
+  let file_metadata: FileMetadata = record_option.unwrap().try_into()?;
 
   let mut file_chunks = Vec::new();
 
-  if file_metadata.chunks_hashes.is_empty() {
-    return Ok(file_chunks);
-  }
+  if file_metadata.chunks_hashes.is_empty() { return Ok(file_chunks); }
 
   for file_chunk_hash in file_metadata.chunks_hashes {
     let file_chunk = get_file_chunk(file_chunk_hash)?;
@@ -91,6 +88,7 @@ pub fn get_file_metadata(original_file_metadata_hash: ActionHash) -> ExternResul
     LinkTypes::FileMetaDataUpdate,
     None,
   )?;
+
 
   let latest_link = links
     .into_iter()
@@ -176,34 +174,35 @@ fn update_file(update_file_metadata_input: UpdateFileMetadataInput) -> ExternRes
 }
 
 #[hdk_extern]
-pub fn delete_file_metadata_and_chunks(original_file_metadata_hash: ActionHash) -> ExternResult<ActionHash> {
-  // let update_links = get_links(
-  //   original_file_metadata_hash.clone(),
-  //   LinkTypes::FileMetaDataUpdate,
-  //   None,
-  // )?;
+pub fn delete_file(original_file_metadata_hash: ActionHash) -> ExternResult<Vec<ActionHash>> {
+  let mut delete_actions: Vec<ActionHash> = Vec::new();
+  let mut update_links = get_links(
+    original_file_metadata_hash.clone(),
+    LinkTypes::FileMetaDataUpdate,
+    None,
+  )?;
 
-  // for link in update_links {
-  //   let file_metadata_hash = ActionHash::from(link.target.clone());
-  //
-  //   warn!("file_metadata_hash: {:?}", file_metadata_hash);
-  //
-  //   let file_chunks = get_file_chunks(file_metadata_hash.clone())?;
-  //   for file_chunk in file_chunks {
-  //     warn!("file_chunk: {:?}", file_chunk)
-      // delete_entry(file_chunk.signed_action.hashed.hash)?;
-    // }
+  let binding = update_links.clone();
+  let latest_link = binding.iter()
+    .max_by(|link_a, link_b| link_a.timestamp.cmp(&link_b.timestamp));
 
-    // delete_entry(file_metadata_hash)?;
-  // }
+  if let Some(latest_link) = latest_link {
+    let latest_metadata_hash = ActionHash::from(latest_link.clone().target);
 
+    update_links.retain(|link| link.target != latest_metadata_hash.clone().into());
+    for link in update_links {
+      delete_actions.push(delete_entry(ActionHash::from(link.target))?);
+    }
 
-  let file_chunks = get_file_chunks(original_file_metadata_hash.clone())?;
-  for file_chunk in file_chunks {
-    delete_entry(file_chunk.signed_action.hashed.hash)?;
+    let file_chunks = get_file_chunks(latest_metadata_hash.clone())?;
+    for file_chunk in file_chunks {
+      delete_actions.push(delete_entry(file_chunk.signed_action.hashed.hash)?);
+    }
+
+    delete_actions.push(delete_entry(latest_metadata_hash)?);
   }
 
-  delete_entry(original_file_metadata_hash.clone())?;
+  delete_actions.push(delete_entry(original_file_metadata_hash)?);
 
-  Ok(original_file_metadata_hash)
+  Ok(delete_actions)
 }
