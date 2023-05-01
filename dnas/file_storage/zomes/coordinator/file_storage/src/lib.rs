@@ -2,9 +2,9 @@ use file_storage_integrity::*;
 use hdk::prelude::*;
 use files::*;
 
-mod files;
+pub mod files;
 
-
+/// A struct representing the input for creating a new file in the File Storage zome.
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone, PartialEq)]
 pub struct FileInput {
   pub name: String,
@@ -13,12 +13,14 @@ pub struct FileInput {
   pub content: SerializedBytes,
 }
 
+/// A struct representing the output for creating or updating a file in the File Storage zome.
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone, PartialEq)]
 pub struct FileOutput {
   pub file_metadata: Record,
   pub file_chunks: Vec<Record>,
 }
 
+/// Creates a new file in the File Storage zome.
 #[hdk_extern]
 pub fn create_file(file_input: FileInput) -> ExternResult<FileOutput> {
   let is_already_created = get_file_metadata_by_path_and_name(
@@ -62,6 +64,7 @@ pub fn create_file(file_input: FileInput) -> ExternResult<FileOutput> {
   Ok(records)
 }
 
+/// Retrieves a list of file chunk records associated with the specified file metadata entry hash.
 #[hdk_extern]
 pub fn get_file_chunks(file_metadata_hash: ActionHash) -> ExternResult<Vec<Record>> {
   let record_option = get_file_metadata(file_metadata_hash)?;
@@ -81,6 +84,7 @@ pub fn get_file_chunks(file_metadata_hash: ActionHash) -> ExternResult<Vec<Recor
   Ok(file_chunks)
 }
 
+/// Retrieves the latest version of a file metadata entry for the specified hash.
 #[hdk_extern]
 pub fn get_file_metadata(original_file_metadata_hash: ActionHash) -> ExternResult<Option<Record>> {
   let links = get_links(
@@ -102,8 +106,9 @@ pub fn get_file_metadata(original_file_metadata_hash: ActionHash) -> ExternResul
   get(latest_file_metadata_hash, GetOptions::default())
 }
 
+/// Retrieves all file metadata entries recursively from the specified directory path.
 #[hdk_extern]
-fn get_files_metadata_by_path_recursively(path_string: String) -> ExternResult<Vec<Record>> {
+pub fn get_files_metadata_by_path_recursively(path_string: String) -> ExternResult<Vec<Record>> {
   let path_string = fs_path_to_dht_path(path_string.as_str());
   warn!("path_string: {:?}", path_string);
   let path = Path::from(path_string);
@@ -111,14 +116,16 @@ fn get_files_metadata_by_path_recursively(path_string: String) -> ExternResult<V
   get_files_metadata_recursively(path)
 }
 
+/// A struct representing the input for updating a file's metadata in the File Storage zome.
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone, PartialEq)]
-struct UpdateFileMetadataInput {
-  original_file_metadata_hash: ActionHash,
-  new_content: SerializedBytes,
+pub struct UpdateFileMetadataInput {
+  pub original_file_metadata_hash: ActionHash,
+  pub new_content: SerializedBytes,
 }
 
+/// Updates a file by creating a new version of the file metadata entry and associating it with the previous version.
 #[hdk_extern]
-fn update_file(update_file_metadata_input: UpdateFileMetadataInput) -> ExternResult<FileOutput> {
+pub fn update_file(update_file_metadata_input: UpdateFileMetadataInput) -> ExternResult<FileOutput> {
   let original_file_metadata_hash = update_file_metadata_input.original_file_metadata_hash;
   let new_content = update_file_metadata_input.new_content.bytes();
 
@@ -173,6 +180,7 @@ fn update_file(update_file_metadata_input: UpdateFileMetadataInput) -> ExternRes
   Ok(records)
 }
 
+/// Deletes a file and all its versions, including the file chunks.
 #[hdk_extern]
 pub fn delete_file(original_file_metadata_hash: ActionHash) -> ExternResult<Vec<ActionHash>> {
   let mut delete_actions: Vec<ActionHash> = Vec::new();

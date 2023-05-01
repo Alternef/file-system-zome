@@ -1,7 +1,13 @@
+//! This module provides functions to handle file metadata and file chunks. It includes
+//! operations such as creating, updating, and retrieving file metadata and chunks.
+//! It also provides utility functions for handling file paths and chunking files.
+
+
 use hdk::prelude::*;
 use file_storage_integrity::*;
 use crate::get_file_metadata;
 
+/// Retrieves file metadata for all files within a given directory path and its subdirectories.
 pub fn get_files_metadata_recursively(path: Path) -> ExternResult<Vec<Record>> {
   let mut files = Vec::new();
 
@@ -32,6 +38,7 @@ pub fn get_files_metadata_recursively(path: Path) -> ExternResult<Vec<Record>> {
 }
 
 
+/// Creates a new file chunk and stores it in the DHT.
 pub fn create_file_chunk(file_chunk: FileChunk) -> ExternResult<Record> {
   let file_chunk_hash = hash_entry(&file_chunk)?;
 
@@ -47,6 +54,7 @@ pub fn create_file_chunk(file_chunk: FileChunk) -> ExternResult<Record> {
   Ok(record)
 }
 
+/// Creates a new file metadata entry and stores it in the DHT.
 pub fn create_file_metadata(file_metadata: FileMetadata) -> ExternResult<Record> {
   let action_hash = create_entry(&EntryTypes::FileMetadata(file_metadata.clone()))?;
   let record = get_file_metadata(action_hash.clone())?.ok_or(wasm_error!(
@@ -68,6 +76,7 @@ pub fn create_file_metadata(file_metadata: FileMetadata) -> ExternResult<Record>
   Ok(record)
 }
 
+/// Retrieves a file chunk by its hash from the DHT.
 pub fn get_file_chunk(file_chunk_hash: EntryHash) -> ExternResult<Record> {
   let record = get(file_chunk_hash, GetOptions::default())?
     .ok_or(wasm_error!(WasmErrorInner::Guest("Chunk not found".into())))?;
@@ -76,6 +85,7 @@ pub fn get_file_chunk(file_chunk_hash: EntryHash) -> ExternResult<Record> {
 }
 
 
+/// Retrieves file metadata by path and name from the DHT.
 pub fn get_file_metadata_by_path_and_name(path: String, name: String) -> ExternResult<Record> {
   let file_path = fs_path_to_dht_path(path.as_str());
   let path = Path::from(file_path);
@@ -100,6 +110,7 @@ pub fn get_file_metadata_by_path_and_name(path: String, name: String) -> ExternR
   Err(wasm_error!(WasmErrorInner::Guest("File not found".into())))
 }
 
+/// Updates the file metadata for a given file.
 pub fn update_file_metadata(original_file_metadata_hash: ActionHash, previous_file_metadata_hash: Option<ActionHash>, file_metadata: FileMetadata) -> ExternResult<Record> {
   let file_metadata_hash = if previous_file_metadata_hash.is_some() {
     previous_file_metadata_hash.unwrap()
@@ -123,6 +134,7 @@ pub fn update_file_metadata(original_file_metadata_hash: ActionHash, previous_fi
   Ok(record)
 }
 
+/// Splits the file content into chunks and returns a vector of their hashes.
 pub fn chunk_file(file_content: Vec<u8>) -> ExternResult<Vec<EntryHash>> {
   let chunk_size = 1024 * 1024; // 1 MB
   let num_chunks = (file_content.len() as f64 / chunk_size as f64).ceil() as usize;
@@ -143,6 +155,7 @@ pub fn chunk_file(file_content: Vec<u8>) -> ExternResult<Vec<EntryHash>> {
   Ok(chunks_hashes)
 }
 
+/// Converts a filesystem-style path to a DHT-style path.
 pub fn fs_path_to_dht_path(path: &str) -> String {
   let mut path = path.to_string();
   if path.starts_with("/") {
@@ -156,6 +169,7 @@ pub fn fs_path_to_dht_path(path: &str) -> String {
   path_parts.join(".")
 }
 
+/// Standardizes a filesystem-style path by removing leading and trailing slashes.
 pub fn standardize_fs_path(path: &str) -> String {
   let mut path = path.to_string();
   if path.starts_with("/") {

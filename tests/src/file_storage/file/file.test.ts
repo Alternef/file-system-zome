@@ -1,5 +1,5 @@
 import {assert, expect, test} from "vitest";
-import {runScenario, pause} from '@holochain/tryorama';
+import {runScenario, pause, Scenario, Player} from '@holochain/tryorama';
 import {Record,} from '@holochain/client';
 import {decode} from '@msgpack/msgpack';
 
@@ -15,11 +15,17 @@ function decodeOutputs(records: Record[]): unknown[] {
 const hAppPath = process.cwd() + '/../workdir/soushi-cloud.happ';
 const appSource = {appBundleSource: {path: hAppPath}};
 
-test('create files and get files metadata by path', async () => {
+async function runScenarioWithTwoAgents(callback: (scenario: Scenario, alice: Player, bob: Player) => Promise<void>) {
 	await runScenario(async scenario => {
 		const [alice, bob] = await scenario.addPlayersWithApps([appSource, appSource])
 		await scenario.shareAllAgents();
 
+		await callback(scenario, alice, bob);
+	});
+}
+
+test('create files and get files metadata by path', async () => {
+	await runScenarioWithTwoAgents(async (scenario, alice, bob) => {
 		// index.txt
 		await createFile(alice.cells[0], sampleFileInput());
 		// index2.txt
@@ -53,9 +59,7 @@ test('create files and get files metadata by path', async () => {
 });
 
 test('create large file and delete it', async () => {
-	await runScenario(async scenario => {
-		const [alice, bob] = await scenario.addPlayersWithApps([appSource, appSource])
-		await scenario.shareAllAgents();
+	await runScenarioWithTwoAgents(async (scenario, alice, bob) => {
 
 		const records = await createFile(alice.cells[0], fiveMbFileInput("/", "large_file.txt"));
 		assert.equal(records.file_chunks.length, 5);
@@ -72,10 +76,7 @@ test('create large file and delete it', async () => {
 });
 
 test('create file, update it, read it and delete in cascade', async () => {
-	await runScenario(async scenario => {
-		const [alice, bob] = await scenario.addPlayersWithApps([appSource, appSource])
-		await scenario.shareAllAgents();
-
+	await runScenarioWithTwoAgents(async (scenario, alice, bob) => {
 		const records = await createFile(alice.cells[0], sampleFileInput());
 		const original_action_hash = records.file_metadata.signed_action.hashed.hash;
 		assert.equal(records.file_chunks.length, 1);
