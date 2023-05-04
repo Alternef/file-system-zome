@@ -1,4 +1,4 @@
-use file_storage_integrity::*;
+use file_system_integrity::*;
 use files::*;
 use hdk::prelude::*;
 

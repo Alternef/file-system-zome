@@ -1,14 +1,17 @@
 [package]
-name = "file_storage_integrity"
+name = "file_system"
 version = "0.0.1"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
-name = "file_storage_integrity"
+name = "file_system"
 
 [dependencies]
-hdi = { workspace = true }
+regex = "1.8.1"
+hdk = { workspace = true }
 holochain_integrity_types = { workspace = true }
 
 serde = { workspace = true }
+
+file_system_integrity = { workspace = true }

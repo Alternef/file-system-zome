@@ -3,7 +3,7 @@
 //! It also provides utility functions for handling file paths and chunking files.
 
 use crate::get_file_metadata;
-use file_storage_integrity::*;
+use file_system_integrity::*;
 use hdk::prelude::*;
 use regex::Regex;
 use std::path::{Path as FileSystemPath, PathBuf};

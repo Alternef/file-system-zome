@@ -13,8 +13,8 @@ hdk = "=0.1.2"
 holochain_integrity_types = "=0.1.2"
 serde = "1"
 
-[workspace.dependencies.file_storage]
-path = "dnas/file_storage/zomes/coordinator/file_storage"
+[workspace.dependencies.file_system]
+path = "dnas/file_system/zomes/coordinator/file_system"
 
-[workspace.dependencies.file_storage_integrity]
-path = "dnas/file_storage/zomes/integrity/file_storage"
+[workspace.dependencies.file_system_integrity]
+path = "dnas/file_system/zomes/integrity/file_system"

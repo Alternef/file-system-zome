@@ -68,18 +68,18 @@ This repository is using these tools:
 
 ### Host
 
-#### File Storage DNA
+#### File System DNA
 
 Inspired by the [file-storage zome](https://github.com/holochain-open-dev/file-storage) of the [Holochain Open Dev](https://holochain-open-dev.github.io/) community.
 
-This DNA is responsible for storing files and their metadata. It's composed of only one zome, the File_Storage zome.
+This DNA is responsible for storing files and their metadata. It's composed of only one zome, the File_System zome.
+
+The path of the file is managed by the path system of Holochain.
 
 The zome allows users to upload files to the Holochain network by chunking them into smaller parts and storing those
 chunks as entries.
 
 The metadata associated with each file is also stored as an entry, and linked to the chunks via their entry hashes.
-
-The path of the file is managed by the path system of Holochain.
 
 The zome provides various functions to create, read and update file metadata, retrieve file chunks, and search for files
 by path recursively.

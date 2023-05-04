@@ -584,10 +584,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "file_storage"
+name = "file_system"
 version = "0.0.1"
 dependencies = [
- "file_storage_integrity",
+ "file_system_integrity",
  "hdk",
  "holochain_integrity_types",
  "regex",
@@ -595,7 +595,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "file_storage_integrity"
+name = "file_system_integrity"
 version = "0.0.1"
 dependencies = [
  "hdi",

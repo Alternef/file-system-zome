@@ -26,7 +26,7 @@ export type FileOutput = {
 
 export async function createFile(cell: CallableCell, file: CreateFileInput): Promise<FileOutput> {
 	return cell.callZome({
-		zome_name: "file_storage",
+		zome_name: "file_system",
 		fn_name: "create_file",
 		payload: file,
 	});
@@ -34,7 +34,7 @@ export async function createFile(cell: CallableCell, file: CreateFileInput): Pro
 
 export async function getFileChunks(cell: CallableCell, file_metadata_hash: ActionHash): Promise<Record[]> {
 	return cell.callZome({
-		zome_name: "file_storage",
+		zome_name: "file_system",
 		fn_name: "get_file_chunks",
 		payload: file_metadata_hash,
 	});
@@ -42,7 +42,7 @@ export async function getFileChunks(cell: CallableCell, file_metadata_hash: Acti
 
 export async function getFileMetadata(cell: CallableCell, file_metadata_hash: ActionHash): Promise<Record | null> {
 	return cell.callZome({
-		zome_name: "file_storage",
+		zome_name: "file_system",
 		fn_name: "get_file_metadata",
 		payload: file_metadata_hash,
 	});
@@ -50,7 +50,7 @@ export async function getFileMetadata(cell: CallableCell, file_metadata_hash: Ac
 
 export async function getFilesMetadataByPathRecursively(cell: CallableCell, path: string): Promise<Record[]> {
 	return cell.callZome({
-		zome_name: "file_storage",
+		zome_name: "file_system",
 		fn_name: "get_files_metadata_by_path_recursively",
 		payload: path,
 	});
@@ -58,7 +58,7 @@ export async function getFilesMetadataByPathRecursively(cell: CallableCell, path
 
 export async function updateFile(cell: CallableCell, original_file_metadata_hash: ActionHash, new_content: Uint8Array): Promise<FileOutput> {
 	return cell.callZome({
-		zome_name: "file_storage",
+		zome_name: "file_system",
 		fn_name: "update_file",
 		payload: {
 			original_file_metadata_hash,
@@ -69,7 +69,7 @@ export async function updateFile(cell: CallableCell, original_file_metadata_hash
 
 export async function deleteFile(cell: CallableCell, original_file_metadata_hash: ActionHash): Promise<Record> {
 	return cell.callZome({
-		zome_name: "file_storage",
+		zome_name: "file_system",
 		fn_name: "delete_file",
 		payload: original_file_metadata_hash,
 	});

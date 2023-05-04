@@ -1,0 +1,19 @@
+---
+manifest_version: "1"
+name: file_system
+integrity:
+  network_seed: ~
+  properties: ~
+  origin_time: 1682077609198213
+  zomes:
+    - name: file_system_integrity
+      hash: ~
+      bundled: "../../../target/wasm32-unknown-unknown/release/file_system_integrity.wasm"
+      dependencies: ~
+coordinator:
+  zomes:
+    - name: file_system
+      hash: ~
+      bundled: "../../../target/wasm32-unknown-unknown/release/file_system.wasm"
+      dependencies:
+        - name: file_system_integrity
