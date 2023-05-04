@@ -590,6 +590,7 @@ dependencies = [
  "file_storage_integrity",
  "hdk",
  "holochain_integrity_types",
+ "regex",
  "serde",
 ]
 

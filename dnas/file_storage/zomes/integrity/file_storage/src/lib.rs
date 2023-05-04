@@ -38,6 +38,7 @@ pub struct FileMetadata {
     pub chunks_hashes: Vec<EntryHash>,
 }
 
+/// Validates the provided `Op` to ensure the entry and link types adhere to the defined constraints.
 #[hdk_extern]
 pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
     if let FlatOp::StoreEntry(store_entry) = op.flattened::<EntryTypes, LinkTypes>()? {
@@ -56,6 +57,7 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
     Ok(ValidateCallbackResult::Valid)
 }
 
+/// Validates the `FileMetadata` for its creation or update, ensuring the name and path meet the defined constraints.
 fn validate_create_file_metadata(
     file_metadata: FileMetadata,
 ) -> ExternResult<ValidateCallbackResult> {
@@ -74,6 +76,7 @@ fn validate_create_file_metadata(
     Ok(ValidateCallbackResult::Valid)
 }
 
+/// Checks if a given path contains any forbidden characters, returning `true` if any are found.
 fn has_forbidden_chars(path: &str) -> bool {
     let forbidden_chars = &['<', '>', ':', '"', '|', '?', '*', '.'];
     path.chars().any(|c| forbidden_chars.contains(&c))

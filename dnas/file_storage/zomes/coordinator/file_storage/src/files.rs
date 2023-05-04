@@ -5,6 +5,7 @@
 use crate::get_file_metadata;
 use file_storage_integrity::*;
 use hdk::prelude::*;
+use regex::Regex;
 use std::path::{Path as FileSystemPath, PathBuf};
 
 /// Retrieves file metadata for all files within a given directory path and its subdirectories.
@@ -157,10 +158,9 @@ pub fn chunk_file(file_content: Vec<u8>) -> ExternResult<Vec<EntryHash>> {
 
 /// Converts a filesystem-style path to a DHT-style path.
 pub fn fs_path_to_dht_path(path: &str) -> String {
-    let mut path = path.to_string();
-    if path.starts_with("/") {
-        path.remove(0);
-    }
+    let mut path = standardize_fs_path(path);
+    path.remove(0);
+
     let mut path_parts = path.split("/").collect::<Vec<&str>>();
     if path_parts[0] == "" {
         path_parts.remove(0);
@@ -169,9 +169,14 @@ pub fn fs_path_to_dht_path(path: &str) -> String {
     path_parts.join(".")
 }
 
+/// Returns a standardized filesystem path by converting backslashes to forward slashes and removing redundant separators.
 pub fn standardize_fs_path(path: &str) -> String {
     let path = path.replace("\\", "/");
+    let re = Regex::new(r"[/]+").unwrap();
+    let path = re.replace_all(&path, "/").to_string();
     let mut path = PathBuf::from(path);
+
+    println!("path: {:?}", path);
 
     let main_separator = std::path::MAIN_SEPARATOR.to_string();
 
@@ -179,11 +184,13 @@ pub fn standardize_fs_path(path: &str) -> String {
         path = FileSystemPath::new(&main_separator).join(path);
     }
 
-    if path.to_str().unwrap().ends_with(&main_separator) {
-        path.pop();
+    let path_str = path.to_str().unwrap();
+    let trimmed_path = path_str.trim_end_matches(&main_separator);
+    if trimmed_path == "" {
+        return main_separator;
     }
 
-    path.to_string_lossy().into_owned()
+    trimmed_path.to_string()
 }
 
 #[cfg(test)]
@@ -192,27 +199,45 @@ mod tests {
 
     #[test]
     fn test_fs_path_to_dht_path() {
-        let path = "/test/path";
-        let dht_path = fs_path_to_dht_path(path);
-        assert_eq!(dht_path, "root.test.path");
+        let cases = vec![
+            ("/test/path", "root.test.path"),
+            ("test/path", "root.test.path"),
+            ("/test//path", "root.test.path"),
+            ("/test/path/", "root.test.path"),
+            ("", "root"),
+            ("/", "root"),
+            ("///", "root"),
+        ];
 
-        let path2 = "test/path";
-        let dht_path2 = fs_path_to_dht_path(path2);
-        assert_eq!(dht_path2, "root.test.path");
+        for (input, expected) in cases {
+            let dht_path = fs_path_to_dht_path(input);
+            assert_eq!(dht_path, expected, "Failed for input: {:?}", input);
+        }
     }
 
     #[test]
     fn test_standardize_fs_path() {
-        let path1 = "/test/path/";
-        let standardized_fs_path1 = standardize_fs_path(path1);
-        assert_eq!(standardized_fs_path1, "/test/path");
+        let cases = vec![
+            ("/test/path/", "/test/path"),
+            ("/test///path//", "/test/path"),
+            ("test\\path\\", "/test/path"),
+            ("test\\\\path\\\\", "/test/path"),
+            ("\\test\\path", "/test/path"),
+            ("test/path", "/test/path"),
+            ("/", "/"),
+            ("", "/"),
+            ("\\", "/"),
+            ("//", "/"),
+            ("\\\\", "/"),
+        ];
 
-        let path2 = "test\\path\\";
-        let standardized_fs_path2 = standardize_fs_path(path2);
-        assert_eq!(standardized_fs_path2, "/test/path");
-
-        let path3 = "\\test\\path";
-        let standardized_fs_path3 = standardize_fs_path(path3);
-        assert_eq!(standardized_fs_path3, "/test/path");
+        for (input, expected) in cases {
+            let standardized_fs_path = standardize_fs_path(input);
+            assert_eq!(
+                standardized_fs_path, expected,
+                "Failed for input: {:?}",
+                input
+            );
+        }
     }
 }

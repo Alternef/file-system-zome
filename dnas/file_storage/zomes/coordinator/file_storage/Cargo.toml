@@ -8,6 +8,7 @@ crate-type = ["cdylib", "rlib"]
 name = "file_storage"
 
 [dependencies]
+regex = "1.8.1"
 hdk = { workspace = true }
 holochain_integrity_types = { workspace = true }
 

@@ -32,7 +32,7 @@ test('create files and get files metadata by path', async () => {
         await createFile(alice.cells[0], sampleFileInput("/subfolder2", "index2.txt"));
         await createFile(alice.cells[0], sampleFileInput("/subfolder/subfolder3"));
 
-        await pause(800);
+        await pause(1200);
 
         // Check if the correct number of files is returned for each path
         let readOutput: Record[] = await getFilesMetadataByPathRecursively(bob.cells[0], "/");
@@ -60,12 +60,12 @@ test('create large file and delete it', async () => {
         const records = await createFile(alice.cells[0], fiveMbFileInput("/", "large_file.txt"));
         assert.equal(records.file_chunks.length, 5);
 
-        await pause(800);
+        await pause(1200);
 
         // Delete the large file
         await deleteFile(alice.cells[0], records.file_metadata.signed_action.hashed.hash);
 
-        await pause(800);
+        await pause(1200);
 
         // Check if the file metadata is deleted
         const readOutput = getFileMetadata(bob.cells[0], records.file_metadata.signed_action.hashed.hash);
@@ -80,19 +80,19 @@ test('create file, update it, read it and delete in cascade', async () => {
         const original_action_hash = records.file_metadata.signed_action.hashed.hash;
         assert.equal(records.file_chunks.length, 1);
 
-        await pause(800);
+        await pause(1200);
 
         // Try to create a file with the same path (should fail)
         const newRecords = createFile(alice.cells[0], sampleFileInput("/", "test.txt", "new content"));
         expect(newRecords).rejects.toThrow();
 
-        await pause(800);
+        await pause(1200);
 
         // Update the file
         const updatedRecords = await updateFile(alice.cells[0], original_action_hash, new TextEncoder().encode("new content"));
         assert.ok(updatedRecords);
 
-        await pause(800);
+        await pause(1200);
 
         // Read the updated file
         const chunksRecords = await getFileChunks(bob.cells[0], original_action_hash);
@@ -103,7 +103,7 @@ test('create file, update it, read it and delete in cascade', async () => {
         const secondUpdateRecords = await updateFile(alice.cells[0], original_action_hash, new TextEncoder().encode("new content 2"));
         assert.ok(secondUpdateRecords);
 
-        await pause(800);
+        await pause(1200);
 
         // Read the updated file again
         const secondChunksRecords = await getFileChunks(bob.cells[0], original_action_hash);
@@ -113,7 +113,7 @@ test('create file, update it, read it and delete in cascade', async () => {
         // Delete the file and related updates
         await deleteFile(alice.cells[0], original_action_hash);
 
-        await pause(800);
+        await pause(1200);
 
         // Check if the file metadata is deleted
         const readOutput = await getFileMetadata(bob.cells[0], original_action_hash);
@@ -156,6 +156,12 @@ test('create file with empty name and check path standardization', async () => {
 
 		// Check if paths are standardized correctly
 		assert.equal(decodedOutput1.path, decodedOutput2.path);
+
+        // Test case 5: Standardize path with multiple '/'
+        const record3 = await createFile(alice.cells[0], sampleFileInput("/subfolder///subfolder2", "test3.txt"));
+        assert.ok(record3);
+        const decodedOutput3 = decodeOutputs([record3.file_metadata])[0] as FileMetadata;
+        assert.equal(decodedOutput3.path, "/subfolder/subfolder2");
 	});
 })
 
