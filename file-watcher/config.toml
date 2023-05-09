@@ -1,0 +1,2 @@
+location = "/home/soushi888/.sync/"
+excludes = [".kate-swp"]

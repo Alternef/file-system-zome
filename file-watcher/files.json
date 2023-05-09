@@ -1,0 +1,26 @@
+[
+  {
+    "path": "index.html",
+    "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\"\n        content=\"width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0\">\n  <meta http-equiv=\"X-UA-Compatible\" content=\"ie=edge\">\n  <link rel=\"stylesheet\" href=\"styles/style.css\">\n  <script src=\"scripts/main.js\"></script>\n  <title>Document</title>\n</head>\n<body>\n  <h1>Hello World !</h1>\n</body>\n</html>"
+  },
+  {
+    "path": "styles/style.css",
+    "content": "h1 {\n    color: red;\n} body {\n    background-color: #101010;\n}"
+  },
+  {
+    "path": "scripts/main.js",
+    "content": "console.log('Hello World');\n"
+  },
+  {
+    "path": "/home/soushi888/.sync/styles/style.css",
+    "content": "h1 {\n    color: red;\n} body {\n    background-color: #101010;\n}"
+  },
+  {
+    "path": "/home/soushi888/.sync/index.html",
+    "content": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\"\n        content=\"width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0\">\n  <meta http-equiv=\"X-UA-Compatible\" content=\"ie=edge\">\n  <link rel=\"stylesheet\" href=\"styles/style.css\">\n  <script src=\"scripts/main.js\"></script>\n  <title>Document</title>\n</head>\n<body>\n  <h1>Hello World !</h1>\n</body>\n</html>"
+  },
+  {
+    "path": "/home/soushi888/.sync/scripts/main.js",
+    "content": "console.log('Hello World');\n"
+  }
+]
