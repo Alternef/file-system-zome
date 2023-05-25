@@ -3,6 +3,7 @@ use files::*;
 use hdk::prelude::*;
 
 pub mod files;
+pub mod signals;
 
 /// A struct representing the input for creating a new file in the File Storage zome.
 #[derive(Serialize, Deserialize, SerializedBytes, Debug, Clone, PartialEq)]

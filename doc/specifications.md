@@ -35,7 +35,6 @@ that has the fallowing functions :
 - `delete_folder` => delete a folder from the DHT
 - `get_files_by_folder` => get all the files from a specific folder from the DHT
 - `create_file` => create a file on the DHT
-- `upload_file` => upload a file to the DHT
 - `update_file` => update a file on the DHT
 - `delete_file` => delete a file from the DHT
 - `get_file` => get a file from the DHT
@@ -64,45 +63,17 @@ pub struct FileMetadata {
 }
 ```
 
-#### Membrane Proof
 
-## Diagrams
+#### Signals
 
-### File Storage
+##### Files
 
-![File Storage](./img/file-storage.png)
+- `file_created` => signal that a file has been created
+- `file_updated` => signal that a file has been updated
+- `file_deleted` => signal that a file has been deleted
 
-```mermaid
-sequenceDiagram
-    participant Alice
-    participant Bob
-    participant FileMetadata
-    participant FileChunk
-    participant UpdateLink
+##### Folders
 
-    Alice->>Alice: createFile(sampleFileInput())
-    Alice->>FileMetadata: create original metadata
-    Alice->>FileChunk: create original chunk
-    Alice->>UpdateLink: link original metadata to chunk
-    Alice->>Alice: store original_action_hash
-    Note over Alice: Pause 1200ms
-
-    Alice->>Alice: createFile(sampleFileInput("/", "test.txt", "new content"))
-    Note over Alice: Expect rejection (duplicate file)
-
-    Note over Alice: Pause 1200ms
-
-    Alice->>Alice: updateFile(original_action_hash, "new content")
-    Alice->>FileMetadata: create updated metadata
-    Alice->>FileChunk: create updated chunk
-    Alice->>UpdateLink: link updated metadata to updated chunk
-    Alice->>UpdateLink: link original metadata to updated metadata
-
-    Note over Alice: Pause 1200ms
-
-    Bob->>Bob: getFileChunks(updatedRecords.file_metadata.signed_action.hashed.hash)
-    Bob->>FileMetadata: get updated metadata
-    Bob->>UpdateLink: follow link to updated chunk
-    Bob->>FileChunk: get updated chunk
-    Note over Bob: Decode and verify updated content
-```
+- `folder_created` => signal that a folder has been created
+- `folder_renamed` => signal that a folder has been renamed
+- `folder_deleted` => signal that a folder has been deleted

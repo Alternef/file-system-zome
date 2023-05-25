@@ -4,6 +4,7 @@
 use hdi::prelude::*;
 
 /// Defines link types for the integrity zome.
+#[derive(Serialize, Deserialize)]
 #[hdk_link_types]
 pub enum LinkTypes {
     PathFileSystem,
@@ -12,6 +13,8 @@ pub enum LinkTypes {
 }
 
 /// Defines entry types for the integrity zome.
+#[derive(Serialize, Deserialize)]
+#[serde(tag = "type")]
 #[hdk_entry_defs]
 #[unit_enum(UnitEntryTypes)]
 pub enum EntryTypes {

@@ -56,6 +56,16 @@ There is actually no file recovery. When a file is updated or deleted, the previ
 - `update_file(update_file_metadata_input: UpdateFileMetadataInput) -> ExternResult<FileOutput>`:
   Updates a file by creating a new version of the file metadata entry and associating it with the previous version. The
   function then returns a record containing the new file metadata entry and a list of file chunk entries.
+
+- `delete_file(original_file_metadata_hash: ActionHash) -> ExternResult<Vec<ActionHash>>`:
+  Deletes a file by marking the file metadata and its file chunks entries as deleted and returning a list of all the entry hashes that were deleted.
+
+##### Signals
+
+- `FileCreated`: emitted when a file is created.
+- `FileUpdated`: emitted when a file is updated.
+- `FileDeleted`: emitted when a file is deleted.
+
   
 ## Environment Setup
 
