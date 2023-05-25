@@ -1,6 +1,6 @@
-# Soushi Coud
+# Soushi Cloud
 
-Soushi-coud (temporary name) is a Holochain application that allows users to store files on the Holochain network, in a file-system-like structure.
+Soushi-cloud (temporary name) is a Holochain application that allows users to store files on the Holochain network, in a file-system-like structure.
 
 ## Architecture
 
