@@ -1,7 +1,44 @@
 //! This module is responsible for managing and emitting signals related to actions performed on file metadata.
 
 use file_system_integrity::*;
-use hdk::prelude::*;
+use hdk::prelude::{holo_hash::hash_type::AnyLinkable, *};
+
+#[hdk_extern]
+fn init(_: ()) -> ExternResult<InitCallbackResult> {
+    let path = Path::from("all_agents");
+    let typed_path = path.typed(LinkTypes::PathAllAgents)?;
+    let agent_hash = agent_info()?.agent_latest_pubkey;
+
+    create_link(
+        typed_path.path_entry_hash()?,
+        agent_hash.clone(),
+        LinkTypes::PathAllAgents,
+        (),
+    )?;
+
+    Ok(InitCallbackResult::Pass)
+}
+
+fn get_all_agents() -> ExternResult<Vec<AgentPubKey>> {
+    let path = Path::from("all_agents");
+    let typed_path = path.typed(LinkTypes::PathAllAgents)?;
+
+    let agents_links = get_links(
+        typed_path.path_entry_hash()?,
+        LinkTypes::PathAllAgents,
+        None,
+    )?;
+
+    let mut agents: Vec<HoloHash<AnyLinkable>> = Vec::new();
+    for agent_link in agents_links {
+        let agent_pub_key = agent_link.target.clone();
+        agents.push(agent_pub_key);
+    }
+
+    warn!("agents: {:?}", agents);
+
+    Ok(vec![])
+}
 
 /// This enum represents the possible signals that can be emitted by the Zome.
 /// These signals correspond to various actions performed on file metadata.
@@ -37,6 +74,7 @@ pub enum Signal {
 /// It goes through each committed action and sends the appropriate signal.
 #[hdk_extern(infallible)]
 pub fn post_commit(committed_actions: Vec<SignedActionHashed>) {
+    get_all_agents();
     for action in committed_actions {
         if let Err(err) = signal_action(action) {
             error!("Error signaling new action: {:?}", err);
@@ -55,6 +93,10 @@ fn signal_action(action: SignedActionHashed) -> ExternResult<()> {
                     action,
                     app_entry: entry.unwrap(),
                 };
+                // let remoteSignal: RemoteSignal = RemoteSignal {
+                //     signal: ExternIO::encode(signal)?,
+                //     agents: vec![],
+                // };
                 emit_signal(&signal)?;
             }
             Ok(())
