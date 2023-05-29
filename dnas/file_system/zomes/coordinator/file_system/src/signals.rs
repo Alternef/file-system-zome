@@ -1,7 +1,7 @@
 //! This module is responsible for managing and emitting signals related to actions performed on file metadata.
 
 use file_system_integrity::*;
-use hdk::prelude::{holo_hash::hash_type::AnyLinkable, *};
+use hdk::prelude::*;
 
 #[hdk_extern]
 fn init(_: ()) -> ExternResult<InitCallbackResult> {
@@ -9,33 +9,42 @@ fn init(_: ()) -> ExternResult<InitCallbackResult> {
     let typed_path = path.typed(LinkTypes::PathAllAgents)?;
     let agent_hash = agent_info()?.agent_latest_pubkey;
 
+    let device = &EntryTypes::Device(Device(agent_hash.clone()));
+    let action_hash = create_entry(device)?;
+
+    warn!("agent initiated : {:?}", agent_hash);
+
     create_link(
         typed_path.path_entry_hash()?,
-        agent_hash.clone(),
-        LinkTypes::PathAllAgents,
+        action_hash,
+        LinkTypes::PathToDevices,
         (),
     )?;
 
     Ok(InitCallbackResult::Pass)
 }
 
-fn get_all_agents() -> ExternResult<Vec<AgentPubKey>> {
+pub fn get_all_agents() -> ExternResult<Vec<AgentPubKey>> {
     let path = Path::from("all_agents");
     let typed_path = path.typed(LinkTypes::PathAllAgents)?;
 
     let agents_links = get_links(
         typed_path.path_entry_hash()?,
-        LinkTypes::PathAllAgents,
+        LinkTypes::PathToDevices,
         None,
     )?;
 
-    let mut agents: Vec<HoloHash<AnyLinkable>> = Vec::new();
-    for agent_link in agents_links {
-        let agent_pub_key = agent_link.target.clone();
-        agents.push(agent_pub_key);
-    }
+    warn!("agents_links number : {:?}", agents_links.len());
 
-    warn!("agents: {:?}", agents);
+    // for agent_link in agents_links {
+    //     let agent_pub_key = get(agent_link.target, GetOptions::default())?
+    //         .ok_or(wasm_error!(WasmErrorInner::Guest(String::from(
+    //             "Could not find the newly created file metadata"
+    //         ))))?
+    //         .into_inner()
+    //         .0;
+    //     agents.push(agent_pub_key);
+    // }
 
     Ok(vec![])
 }
@@ -74,7 +83,6 @@ pub enum Signal {
 /// It goes through each committed action and sends the appropriate signal.
 #[hdk_extern(infallible)]
 pub fn post_commit(committed_actions: Vec<SignedActionHashed>) {
-    get_all_agents();
     for action in committed_actions {
         if let Err(err) = signal_action(action) {
             error!("Error signaling new action: {:?}", err);
@@ -93,10 +101,11 @@ fn signal_action(action: SignedActionHashed) -> ExternResult<()> {
                     action,
                     app_entry: entry.unwrap(),
                 };
-                // let remoteSignal: RemoteSignal = RemoteSignal {
-                //     signal: ExternIO::encode(signal)?,
-                //     agents: vec![],
-                // };
+
+                let all_agents = get_all_agents()?;
+                warn!("all_agents: {:?}", all_agents);
+
+                // remote_signal(signal, all_agents)?;
                 emit_signal(&signal)?;
             }
             Ok(())

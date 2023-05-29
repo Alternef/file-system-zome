@@ -56,6 +56,10 @@ pub fn create_file(file_input: FileInput) -> ExternResult<FileOutput> {
         file_chunks: chunks_records,
     };
 
+    // let all_agents = get_all_agents()?;
+
+    // warn!("all_agents: {:?}", all_agents);
+
     Ok(records)
 }
 
@@ -108,7 +112,6 @@ pub fn get_file_metadata(original_file_metadata_hash: ActionHash) -> ExternResul
 #[hdk_extern]
 pub fn get_files_metadata_by_path_recursively(path_string: String) -> ExternResult<Vec<Record>> {
     let path_string = fs_path_to_dht_path(path_string.as_str());
-    warn!("path_string: {:?}", path_string);
     let path = Path::from(path_string);
 
     get_files_metadata_recursively(path)
