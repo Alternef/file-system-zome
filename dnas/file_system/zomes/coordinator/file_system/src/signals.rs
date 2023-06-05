@@ -34,19 +34,21 @@ pub fn get_all_agents() -> ExternResult<Vec<AgentPubKey>> {
         None,
     )?;
 
-    warn!("agents_links number : {:?}", agents_links.len());
+    let mut agents: Vec<HoloHash<holo_hash::hash_type::Agent>> = Vec::new();
 
-    // for agent_link in agents_links {
-    //     let agent_pub_key = get(agent_link.target, GetOptions::default())?
-    //         .ok_or(wasm_error!(WasmErrorInner::Guest(String::from(
-    //             "Could not find the newly created file metadata"
-    //         ))))?
-    //         .into_inner()
-    //         .0;
-    //     agents.push(agent_pub_key);
-    // }
+    for agent_link in agents_links {
+        let record = get(ActionHash::from(agent_link.target), GetOptions::default())?.ok_or(
+            wasm_error!(WasmErrorInner::Guest(String::from(
+                "Could not find the newly created file metadata"
+            ))),
+        )?;
+        let agent_pub_key: Device = record.try_into()?;
+        agents.push(agent_pub_key.0);
+    }
 
-    Ok(vec![])
+    warn!("agents: {:?}", agents);
+
+    Ok(agents)
 }
 
 /// This enum represents the possible signals that can be emitted by the Zome.
@@ -103,10 +105,7 @@ fn signal_action(action: SignedActionHashed) -> ExternResult<()> {
                 };
 
                 let all_agents = get_all_agents()?;
-                warn!("all_agents: {:?}", all_agents);
-
-                // remote_signal(signal, all_agents)?;
-                emit_signal(&signal)?;
+                remote_signal(signal, all_agents)?;
             }
             Ok(())
         }
@@ -119,7 +118,9 @@ fn signal_action(action: SignedActionHashed) -> ExternResult<()> {
                     app_entry: entry.unwrap(),
                     original_app_entry: original_entry.unwrap(),
                 };
-                emit_signal(&signal)?;
+
+                let all_agents = get_all_agents()?;
+                remote_signal(signal, all_agents)?;
             }
             Ok(())
         }
@@ -130,7 +131,9 @@ fn signal_action(action: SignedActionHashed) -> ExternResult<()> {
                     action,
                     original_app_entry: original_entry.unwrap(),
                 };
-                emit_signal(&signal)?;
+
+                let all_agents = get_all_agents()?;
+                remote_signal(signal, all_agents)?;
             }
             Ok(())
         }
