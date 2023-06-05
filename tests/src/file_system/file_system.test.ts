@@ -72,8 +72,8 @@ test.only("create files and get files metadata by path", async () => {
 
     await pause(1200);
 
-    // const actuelSignals = await signals;
-    // console.log(actuelSignals);
+    const actuelSignals = await signals;
+    console.log(actuelSignals);
 
     // Check if the correct number of files is returned for each path
     let readOutput: Record[] = await getFilesMetadataByPathRecursively(

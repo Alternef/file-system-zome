@@ -12,14 +12,21 @@ fn init(_: ()) -> ExternResult<InitCallbackResult> {
     let device = &EntryTypes::Device(Device(agent_hash.clone()));
     let action_hash = create_entry(device)?;
 
-    warn!("agent initiated : {:?}", agent_hash);
-
     create_link(
         typed_path.path_entry_hash()?,
         action_hash,
         LinkTypes::PathToDevices,
         (),
     )?;
+
+    let mut fns = BTreeSet::new();
+    fns.insert((zome_info()?.name, "recv_remote_signal".into()));
+    let functions = GrantedFunctions::Listed(fns);
+    create_cap_grant(CapGrantEntry {
+        tag: "".into(),
+        access: ().into(),
+        functions,
+    })?;
 
     Ok(InitCallbackResult::Pass)
 }
@@ -45,8 +52,6 @@ pub fn get_all_agents() -> ExternResult<Vec<AgentPubKey>> {
         let agent_pub_key: Device = record.try_into()?;
         agents.push(agent_pub_key.0);
     }
-
-    warn!("agents: {:?}", agents);
 
     Ok(agents)
 }
@@ -90,6 +95,12 @@ pub fn post_commit(committed_actions: Vec<SignedActionHashed>) {
             error!("Error signaling new action: {:?}", err);
         }
     }
+}
+
+#[hdk_extern]
+fn recv_remote_signal(signal: SerializedBytes) -> ExternResult<()> {
+    emit_signal(&signal)?;
+    Ok(())
 }
 
 /// This function is triggered after the agent commits an action.
