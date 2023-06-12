@@ -57,7 +57,7 @@ async function signalHandler() {
   });
 }
 
-test.only("create files and get files metadata by path", async () => {
+test("create files and get files metadata by path", async () => {
   const checkSignal = signalHandler();
   await runScenarioWithTwoAgents(async (scenario, alice, bob, signals) => {
     // Create various files in different folders
