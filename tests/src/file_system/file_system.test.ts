@@ -1,6 +1,6 @@
 import { assert, expect, test } from "vitest";
-import { runScenario, pause, Scenario, Player } from "@holochain/tryorama";
-import { Record } from "@holochain/client";
+import { runScenario, pause, Scenario, Player, Dna } from "@holochain/tryorama";
+import { AppSignal, AppSignalCb, Record } from "@holochain/client";
 import { decode } from "@msgpack/msgpack";
 
 import {
@@ -23,20 +23,43 @@ const hAppPath = process.cwd() + "/../workdir/soushi-cloud.happ";
 const appSource = { appBundleSource: { path: hAppPath } };
 
 async function runScenarioWithTwoAgents(
-  callback: (scenario: Scenario, alice: Player, bob: Player) => Promise<void>
+  callback: (
+    scenario: Scenario,
+    alice: Player,
+    bob: Player,
+    signals: Promise<AppSignal>
+  ) => Promise<void>
 ) {
   await runScenario(async (scenario) => {
+    let signalHandler: AppSignalCb | undefined;
+    const signalReceveived = new Promise<AppSignal>((resolve) => {
+      signalHandler = (signal) => {
+        resolve(signal);
+      };
+    });
+
     const [alice, bob] = await scenario.addPlayersWithApps([
       appSource,
       appSource,
     ]);
     await scenario.shareAllAgents();
 
-    await callback(scenario, alice, bob);
+    await callback(scenario, alice, bob, signalReceveived);
   });
 }
+
+async function signalHandler() {
+  let signalHandler: AppSignalCb | undefined;
+  return new Promise<AppSignal>((resolve) => {
+    signalHandler = (signal) => {
+      resolve(signal);
+    };
+  });
+}
+
 test("create files and get files metadata by path", async () => {
-  await runScenarioWithTwoAgents(async (scenario, alice, bob) => {
+  const checkSignal = signalHandler();
+  await runScenarioWithTwoAgents(async (scenario, alice, bob, signals) => {
     // Create various files in different folders
     await createFile(alice.cells[0], sampleFileInput());
     await createFile(alice.cells[0], sampleFileInput("/", "index2.txt"));
@@ -48,6 +71,9 @@ test("create files and get files metadata by path", async () => {
     await createFile(alice.cells[0], sampleFileInput("/subfolder/subfolder3"));
 
     await pause(1200);
+
+    // const actuelSignals = await signals;
+    // console.log(actuelSignals);
 
     // Check if the correct number of files is returned for each path
     let readOutput: Record[] = await getFilesMetadataByPathRecursively(

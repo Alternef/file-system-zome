@@ -8,7 +8,9 @@ use hdi::prelude::*;
 #[hdk_link_types]
 pub enum LinkTypes {
     PathFileSystem,
+    PathAllAgents,
     PathToFileMetaData,
+    PathToDevices,
     FileMetaDataUpdate,
 }
 
@@ -20,6 +22,7 @@ pub enum LinkTypes {
 pub enum EntryTypes {
     FileMetadata(FileMetadata),
     FileChunk(FileChunk),
+    Device(Device),
 }
 
 /// File chunk entry type.
@@ -41,6 +44,10 @@ pub struct FileMetadata {
     pub chunks_hashes: Vec<EntryHash>,
 }
 
+#[hdk_entry_helper]
+#[derive(Clone)]
+pub struct Device(pub AgentPubKey);
+
 /// Validates the provided `Op` to ensure the entry and link types adhere to the defined constraints.
 #[hdk_extern]
 pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
@@ -51,7 +58,7 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                     EntryTypes::FileMetadata(file_metadata) => {
                         return validate_create_file_metadata(file_metadata);
                     }
-                    EntryTypes::FileChunk(_) => return Ok(ValidateCallbackResult::Valid),
+                    _ => return Ok(ValidateCallbackResult::Valid),
                 }
             }
             _ => (),

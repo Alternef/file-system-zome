@@ -3,6 +3,59 @@
 use file_system_integrity::*;
 use hdk::prelude::*;
 
+#[hdk_extern]
+fn init(_: ()) -> ExternResult<InitCallbackResult> {
+    let path = Path::from("all_agents");
+    let typed_path = path.typed(LinkTypes::PathAllAgents)?;
+    let agent_hash = agent_info()?.agent_latest_pubkey;
+
+    let device = &EntryTypes::Device(Device(agent_hash.clone()));
+    let action_hash = create_entry(device)?;
+
+    create_link(
+        typed_path.path_entry_hash()?,
+        action_hash,
+        LinkTypes::PathToDevices,
+        (),
+    )?;
+
+    let mut fns = BTreeSet::new();
+    fns.insert((zome_info()?.name, "recv_remote_signal".into()));
+    let functions = GrantedFunctions::Listed(fns);
+    create_cap_grant(CapGrantEntry {
+        tag: "".into(),
+        access: ().into(),
+        functions,
+    })?;
+
+    Ok(InitCallbackResult::Pass)
+}
+
+pub fn get_all_agents() -> ExternResult<Vec<AgentPubKey>> {
+    let path = Path::from("all_agents");
+    let typed_path = path.typed(LinkTypes::PathAllAgents)?;
+
+    let agents_links = get_links(
+        typed_path.path_entry_hash()?,
+        LinkTypes::PathToDevices,
+        None,
+    )?;
+
+    let mut agents: Vec<HoloHash<holo_hash::hash_type::Agent>> = Vec::new();
+
+    for agent_link in agents_links {
+        let record = get(ActionHash::from(agent_link.target), GetOptions::default())?.ok_or(
+            wasm_error!(WasmErrorInner::Guest(String::from(
+                "Could not find the newly created file metadata"
+            ))),
+        )?;
+        let agent_pub_key: Device = record.try_into()?;
+        agents.push(agent_pub_key.0);
+    }
+
+    Ok(agents)
+}
+
 /// This enum represents the possible signals that can be emitted by the Zome.
 /// These signals correspond to various actions performed on file metadata.
 #[derive(Serialize, Deserialize, Debug)]
@@ -44,6 +97,12 @@ pub fn post_commit(committed_actions: Vec<SignedActionHashed>) {
     }
 }
 
+#[hdk_extern]
+fn recv_remote_signal(signal: SerializedBytes) -> ExternResult<()> {
+    emit_signal(&signal)?;
+    Ok(())
+}
+
 /// This function is triggered after the agent commits an action.
 /// It goes through each committed action and sends the appropriate signal.
 fn signal_action(action: SignedActionHashed) -> ExternResult<()> {
@@ -55,7 +114,9 @@ fn signal_action(action: SignedActionHashed) -> ExternResult<()> {
                     action,
                     app_entry: entry.unwrap(),
                 };
-                emit_signal(&signal)?;
+
+                let all_agents = get_all_agents()?;
+                remote_signal(signal, all_agents)?;
             }
             Ok(())
         }
@@ -68,7 +129,9 @@ fn signal_action(action: SignedActionHashed) -> ExternResult<()> {
                     app_entry: entry.unwrap(),
                     original_app_entry: original_entry.unwrap(),
                 };
-                emit_signal(&signal)?;
+
+                let all_agents = get_all_agents()?;
+                remote_signal(signal, all_agents)?;
             }
             Ok(())
         }
@@ -79,7 +142,9 @@ fn signal_action(action: SignedActionHashed) -> ExternResult<()> {
                     action,
                     original_app_entry: original_entry.unwrap(),
                 };
-                emit_signal(&signal)?;
+
+                let all_agents = get_all_agents()?;
+                remote_signal(signal, all_agents)?;
             }
             Ok(())
         }
