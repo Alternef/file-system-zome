@@ -3,7 +3,7 @@ manifest_version: "1"
 name: soushi-cloud
 description: ~
 roles:
-  - name: todos
+  - name: file_system
     provisioning:
       strategy: create
       deferred: false
